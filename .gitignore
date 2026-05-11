@@ -1,0 +1,17 @@
+# Secrets - JAMAIS commités en clair
+*.key
+*.crt
+*.pem
+ansible/vault_pass.txt
+ansible/.vault_pass
+*_secrets.yml
+
+# Ansible artifacts
+*.retry
+.ansible/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+.DS_Store
