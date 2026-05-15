@@ -1,0 +1,24 @@
+---
+extends: default
+
+rules:
+  line-length:
+    max: 200
+    level: warning
+  comments:
+    min-spaces-from-content: 1
+  comments-indentation: enable
+  truthy:
+    allowed-values: ['true', 'false', 'yes', 'no']
+  braces:
+    max-spaces-inside: 1
+  indentation:
+    spaces: 2
+    indent-sequences: true
+  document-start:
+    present: true
+
+ignore: |
+  .venv/
+  .cache/
+  .collections/
