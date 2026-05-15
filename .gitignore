@@ -1,17 +1,32 @@
-# Secrets - JAMAIS commités en clair
-*.key
-*.crt
-*.pem
-ansible/vault_pass.txt
-ansible/.vault_pass
-*_secrets.yml
+# Python venv
+.venv/
+__pycache__/
+*.pyc
+*.pyo
 
-# Ansible artifacts
+# Ansible
 *.retry
 .ansible/
+.cache/
+.collections/
+
+# Vault password files (jamais commit)
+vault-pass*
+.vault-pass*
+.vault_pass*
 
 # Editor
 .vscode/
 .idea/
 *.swp
+*.swo
+*~
 .DS_Store
+Thumbs.db
+
+# OS / temp
+*.tmp
+*.bak
+
+# Logs locaux
+*.log
