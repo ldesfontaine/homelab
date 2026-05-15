@@ -1,0 +1,8 @@
+---
+# ===========================================================================
+# Variables spécifiques au groupe `vps`
+# ===========================================================================
+
+# Port SSH cible du VPS (ADR-004)
+# Bootstrap se fait sur ssh_bootstrap_port (22), puis bascule sur ce port.
+ssh_target_port: 2203

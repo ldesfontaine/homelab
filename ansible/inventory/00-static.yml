@@ -1,0 +1,22 @@
+---
+# ===========================================================================
+# Inventaire statique du homelab
+# ===========================================================================
+# Référence : docs/decisions/ADR-000-fondations-ansible.md (ADR-003)
+#
+# Aujourd'hui : VPS uniquement.
+# Demain (phase Proxmox) : ajout de inventory/01-proxmox.proxmox.yml qui
+# remontera dynamiquement les LXCs/VMs depuis l'API Proxmox. Ce fichier
+# statique restera pour les machines hors-Proxmox (VPS, équipements réseau).
+# ===========================================================================
+
+all:
+  children:
+    vps:
+      hosts:
+        vps-pangolin:
+          # IP publique du VPS Hetzner — à renseigner avant le premier run
+          ansible_host: REPLACE_ME_WITH_VPS_PUBLIC_IP
+          # Connexion gérée par les variables globales (ADR-004)
+          ansible_port: "{{ ssh_target_port }}"
+          ansible_user: "{{ ssh_target_user }}"

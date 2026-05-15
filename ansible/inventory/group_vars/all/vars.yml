@@ -1,0 +1,52 @@
+---
+# ===========================================================================
+# Variables communes à TOUS les hôtes du homelab
+# ===========================================================================
+# Référence : docs/decisions/ADR-000-fondations-ansible.md
+# ===========================================================================
+
+# ──────────────────────────────────────────────────────────────────────────
+# Domaine homelab (ADR-012)
+# Pour changer de domaine : modifier UNIQUEMENT homelab_domain ci-dessous.
+# Aucun rôle, aucun template, aucun playbook ne doit hardcoder le domaine.
+# ──────────────────────────────────────────────────────────────────────────
+homelab_domain: "ldesfontaine.com"
+
+# Sous-domaines centralisés
+homelab_subdomain_portfolio: "portfolio"
+homelab_subdomain_vault: "vault"
+homelab_subdomain_files: "files"
+homelab_subdomain_auth: "auth"
+
+# FQDN construits — utiliser ces variables partout
+homelab_fqdn_portfolio: "{{ homelab_subdomain_portfolio }}.{{ homelab_domain }}"
+homelab_fqdn_vault: "{{ homelab_subdomain_vault }}.{{ homelab_domain }}"
+homelab_fqdn_files: "{{ homelab_subdomain_files }}.{{ homelab_domain }}"
+homelab_fqdn_auth: "{{ homelab_subdomain_auth }}.{{ homelab_domain }}"
+
+# ──────────────────────────────────────────────────────────────────────────
+# SSH bootstrap et cible (ADR-004)
+# ssh_target_port n'a PAS de default global : chaque groupe le définit
+# ──────────────────────────────────────────────────────────────────────────
+ssh_bootstrap_port: 22
+ssh_bootstrap_user: root
+ssh_target_user: deploy
+
+# ──────────────────────────────────────────────────────────────────────────
+# Clés SSH publiques admin déployées sur toutes les machines
+# Le bootstrap pose ces clés dans ~deploy/.ssh/authorized_keys
+# ──────────────────────────────────────────────────────────────────────────
+admin_ssh_public_keys:
+  - "ssh-ed25519 REPLACE_ME_WITH_YOUR_ACTUAL_PUBKEY ldesfontaine@laptop"
+
+# ──────────────────────────────────────────────────────────────────────────
+# Référence vers le token Cloudflare (DNS-01 pour Let's Encrypt)
+# La valeur réelle est dans vault.yml — ici on ne fait que router.
+# ──────────────────────────────────────────────────────────────────────────
+cloudflare_api_token: "{{ vault_cloudflare_api_token }}"
+
+# ──────────────────────────────────────────────────────────────────────────
+# Timezone et locale (configurées par le rôle `common`)
+# ──────────────────────────────────────────────────────────────────────────
+system_timezone: "Europe/Paris"
+system_locale: "en_US.UTF-8"
