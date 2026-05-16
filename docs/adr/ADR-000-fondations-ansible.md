@@ -167,6 +167,18 @@ L'ordre est non négociable (un bug ici = perte de la machine) :
 
 **Conséquence importante** : la **clé publique SSH** de l'admin est dans `group_vars/all/vars.yml` (variable `admin_ssh_public_keys`, liste de clés). La **clé privée** n'est nulle part dans le repo.
 
+### Limite acceptée — check mode partiel sur le bootstrap
+
+Le rôle `bootstrap` n'est **pas entièrement dry-run-friendly** par construction. Chaque task agit sur un état créé par la précédente (user créé → `.ssh/` créé → `authorized_keys` créé → perms ajustées) ; en check mode, Ansible simule mais ne crée pas, donc les tasks suivantes échouent sur des modules qui exigent la présence réelle du fichier/user (ex : `ansible.builtin.file` avec `state: file`).
+
+**Conséquence** : le dry-run `--check` du playbook `bootstrap.yml` plante typiquement au milieu du rôle `bootstrap`. **C'est attendu**, ce n'est pas un bug. La validation du rôle se fait via :
+1. Run réel sur un VPS fresh
+2. **2ème run** qui doit afficher `changed=0` (test d'idempotence — c'est le **vrai** test du bootstrap)
+
+Cette limitation **ne s'applique qu'au rôle `bootstrap`**. Tous les rôles ultérieurs (common, docker, pangolin, etc.) doivent passer proprement en `--check --diff` sur un host déjà bootstrapé.
+
+À reconsidérer plus tard : on pourrait ajouter `when: not ansible_check_mode` sur les tasks qui dépendent d'un état créé, mais le ROI est faible pour une opération unique par host.
+
 ---
 
 ## Décision 5 — Hardening : `devsec.hardening` + rôle custom
