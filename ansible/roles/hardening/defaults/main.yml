@@ -1,0 +1,66 @@
+---
+# ===========================================================================
+# Variables surchargeables du rôle `hardening`
+# ===========================================================================
+# Ce rôle est un wrapper léger autour des rôles upstream de la collection
+# `devsec.hardening` (cf. ADR-000 Décision 5). Les variables ci-dessous
+# sont nos paramètres de tuning ; elles sont mappées vers les variables
+# upstream (`ssh_server_config_file`, `sysctl_overwrite`, etc.) dans
+# tasks/os.yml et tasks/ssh.yml via le bloc `vars` d'`include_role`.
+#
+# Cette indirection permet :
+#   - de respecter la convention ADR-000 (variables préfixées par le nom
+#     du rôle pour celles exposées dans defaults/main.yml) ;
+#   - de présenter à l'utilisateur une API stable indépendante des renommages
+#     internes d'une version majeure de devsec à l'autre.
+# ===========================================================================
+
+# ──────────────────────────────────────────────────────────────────────────
+# Sélecteurs — désactivables individuellement (debug, host spécifique)
+# ──────────────────────────────────────────────────────────────────────────
+hardening_apply_os: true
+hardening_apply_ssh: true
+
+# ──────────────────────────────────────────────────────────────────────────
+# Overrides OS — passés à devsec.hardening.os_hardening via include_role
+# ──────────────────────────────────────────────────────────────────────────
+
+# IPv6 reste activé (le VPS Hetzner a une IPv6 publique). Forwarding désactivé
+# car le VPS n'est pas un routeur. Override possible par groupe (futur host
+# Proxmox / OPNsense aura forwarding=1).
+hardening_sysctl_overrides:
+  net.ipv6.conf.all.disable_ipv6: 0
+  net.ipv6.conf.default.disable_ipv6: 0
+  net.ipv4.ip_forward: 0
+  net.ipv6.conf.all.forwarding: 0
+
+# Le user `deploy` est admin (sudo NOPASSWD via clé SSH). Pas d'expiration
+# de password sur ce compte (il n'a pas de password).
+hardening_users_without_password_ageing:
+  - "{{ ssh_target_user }}"
+
+# ──────────────────────────────────────────────────────────────────────────
+# Overrides SSH — passés à devsec.hardening.ssh_hardening via include_role
+# ──────────────────────────────────────────────────────────────────────────
+
+# Drop-in plutôt que réécriture complète de /etc/ssh/sshd_config — notre
+# bootstrap pose déjà un sshd_config minimal qui se termine par
+# `Include /etc/ssh/sshd_config.d/*.conf`. Ce chemin reçoit donc l'output
+# complet du template devsec (ciphers/KEX/MACs/MaxStartups/LoginGraceTime/
+# Banner/AuthenticationMethods/etc.) ; les directives déjà présentes dans
+# le sshd_config principal gardent la priorité (sshd : « first value wins »),
+# ce qui garantit que Port et AllowUsers restent ceux du bootstrap.
+hardening_sshd_drop_in_path: /etc/ssh/sshd_config.d/99-hardening.conf
+
+# Banner — le fichier /etc/issue.net est déployé par le rôle `login_banner`
+# (qui doit tourner avant `hardening` dans le playbook).
+hardening_ssh_banner_enabled: true
+hardening_ssh_banner_path: /etc/issue.net
+
+# Liste vide = écoute sur toutes les interfaces (IPv4 + IPv6) — sshd default.
+# On override explicitement parce que devsec a `[0.0.0.0]` qui couperait
+# l'écoute IPv6 du VPS.
+hardening_ssh_listen_addresses: []
+
+# IPv6 SSH activé (sshd + ssh client) côté devsec
+hardening_ssh_ipv6_enabled: true

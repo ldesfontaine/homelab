@@ -1,0 +1,7 @@
+---
+- name: Run devsec.hardening.os_hardening
+  ansible.builtin.include_role:
+    name: "{{ _hardening_devsec_os_role }}"
+  vars:
+    sysctl_overwrite: "{{ hardening_sysctl_overrides }}"
+    os_users_without_password_ageing: "{{ hardening_users_without_password_ageing }}"

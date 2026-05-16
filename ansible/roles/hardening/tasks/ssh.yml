@@ -1,0 +1,26 @@
+---
+- name: Run devsec.hardening.ssh_hardening
+  ansible.builtin.include_role:
+    name: "{{ _hardening_devsec_ssh_role }}"
+  vars:
+    # Cible du template devsec — drop-in plutôt que sshd_config principal
+    ssh_server_config_file: "{{ hardening_sshd_drop_in_path }}"
+
+    # Port et user — reflètent les valeurs canoniques du groupe vps
+    ssh_server_ports:
+      - "{{ ssh_target_port }}"
+    ssh_allow_users: "{{ ssh_target_user }}"
+
+    # Politique d'authentification — strictement identique au bootstrap
+    ssh_permit_root_login: "no"
+    ssh_server_password_login: false
+    ssh_pubkey_authentication: true
+    ssh_use_pam: true
+
+    # Banner légal (fichier déployé par le rôle login_banner)
+    ssh_banner: "{{ hardening_ssh_banner_enabled }}"
+    ssh_banner_path: "{{ hardening_ssh_banner_path }}"
+
+    # Écoute sur toutes les interfaces (IPv4 + IPv6)
+    ssh_listen_to: "{{ hardening_ssh_listen_addresses }}"
+    network_ipv6_enable: "{{ hardening_ssh_ipv6_enabled }}"

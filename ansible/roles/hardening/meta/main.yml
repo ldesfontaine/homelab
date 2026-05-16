@@ -1,0 +1,21 @@
+---
+galaxy_info:
+  author: ldesfontaine
+  description: Wrapper around devsec.hardening (OS + SSH) with homelab overrides
+  license: MIT
+  min_ansible_version: '2.17'
+  platforms:
+    - name: Debian
+      versions:
+        - trixie
+  galaxy_tags:
+    - system
+    - homelab
+    - security
+    - hardening
+    - cis
+
+# Décision 2 de l'ADR-000 : pas de dépendances inter-rôles, l'ordre est
+# piloté par les playbooks. Les rôles devsec sont appelés via include_role
+# dans tasks/, pas via dependencies.
+dependencies: []

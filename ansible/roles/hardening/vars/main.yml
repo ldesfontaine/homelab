@@ -1,0 +1,10 @@
+---
+# ===========================================================================
+# Constantes internes au rôle `hardening`
+# ===========================================================================
+# Préfixées par `_` selon la convention ADR-000 Décision 2.
+# Devsec gère l'essentiel ; ce fichier est volontairement vide pour l'instant.
+# ===========================================================================
+
+_hardening_devsec_os_role: devsec.hardening.os_hardening
+_hardening_devsec_ssh_role: devsec.hardening.ssh_hardening
