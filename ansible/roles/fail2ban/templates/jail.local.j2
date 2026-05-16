@@ -1,0 +1,19 @@
+# {{ ansible_managed }}
+#
+# fail2ban jail.local — homelab VPS
+# Backend journald (Debian 13 / systemd)
+
+[DEFAULT]
+bantime  = {{ fail2ban_bantime }}
+findtime = {{ fail2ban_findtime }}
+maxretry = {{ fail2ban_maxretry }}
+backend  = {{ fail2ban_backend }}
+ignoreip = {{ fail2ban_ignoreip | join(' ') }}
+
+{% if fail2ban_sshd_enabled %}
+[sshd]
+enabled  = true
+port     = {{ fail2ban_sshd_port }}
+maxretry = {{ fail2ban_sshd_maxretry }}
+bantime  = {{ fail2ban_sshd_bantime }}
+{% endif %}
