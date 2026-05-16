@@ -1,0 +1,8 @@
+---
+# ===========================================================================
+# Constantes internes du rôle `bootstrap` (préfixe `_`)
+# ===========================================================================
+
+_bootstrap_sshd_config_path: /etc/ssh/sshd_config
+_bootstrap_sshd_validate_cmd: '/usr/sbin/sshd -t -f %s'
+_bootstrap_sudoers_validate_cmd: '/usr/sbin/visudo -cf %s'

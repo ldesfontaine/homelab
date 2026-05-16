@@ -1,0 +1,19 @@
+---
+# Détecte si on est connecté avec les credentials cibles : si oui, le bootstrap
+# a déjà été effectué et toutes les étapes suivantes sont sautées.
+
+- name: Determine if bootstrap is already complete
+  ansible.builtin.set_fact:
+    _bootstrap_already_done: >-
+      {{
+        (ansible_user | default('') == bootstrap_target_user)
+        and ((ansible_port | default(0) | int) == (bootstrap_target_port | int))
+      }}
+
+- name: Log detected bootstrap state
+  ansible.builtin.debug:
+    msg: >-
+      Bootstrap state — already_done={{ _bootstrap_already_done }}
+      (connection: {{ ansible_user | default('?') }}@{{ ansible_host }}:{{ ansible_port | default('?') }} ;
+      target: {{ bootstrap_target_user }}@{{ bootstrap_target_port }} ;
+      bootstrap: {{ ssh_bootstrap_user }}@{{ bootstrap_bootstrap_port }})

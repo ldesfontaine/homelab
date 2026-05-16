@@ -1,0 +1,19 @@
+---
+galaxy_info:
+  author: ldesfontaine
+  description: First-run hardening for a fresh VPS — deploy user, hardened sshd, transitional UFW
+  license: MIT
+  min_ansible_version: '2.17'
+  platforms:
+    - name: Debian
+      versions:
+        - trixie
+  galaxy_tags:
+    - system
+    - homelab
+    - bootstrap
+    - hardening
+
+# Décision 2 de l'ADR-000 : pas de dépendances inter-rôles, l'ordre est piloté
+# par les playbooks.
+dependencies: []

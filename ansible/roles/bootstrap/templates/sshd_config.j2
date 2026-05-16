@@ -1,0 +1,40 @@
+# {{ ansible_managed }}
+#
+# Configuration sshd gérée par Ansible — rôle bootstrap (session 1).
+# Hardening de base : changement de port, désactivation root + password,
+# clé publique only, AllowUsers restrictif.
+# Le hardening lourd (ciphers/KEX/MACs, MaxStartups, etc.) sera ajouté en
+# session 2 via la collection `devsec.hardening`.
+
+Port {{ bootstrap_target_port }}
+AddressFamily any
+
+# ── Authentification ───────────────────────────────────────────────────────
+PermitRootLogin {{ bootstrap_sshd_permit_root_login }}
+PasswordAuthentication {{ bootstrap_sshd_password_authentication }}
+PubkeyAuthentication {{ bootstrap_sshd_pubkey_authentication }}
+ChallengeResponseAuthentication no
+UsePAM yes
+MaxAuthTries {{ bootstrap_sshd_max_auth_tries }}
+
+# ── Users autorisés ────────────────────────────────────────────────────────
+AllowUsers {{ bootstrap_target_user }}
+
+# ── Keep-alive ─────────────────────────────────────────────────────────────
+ClientAliveInterval {{ bootstrap_sshd_client_alive_interval }}
+ClientAliveCountMax {{ bootstrap_sshd_client_alive_count_max }}
+
+# ── Logging ────────────────────────────────────────────────────────────────
+SyslogFacility AUTH
+LogLevel VERBOSE
+
+# ── Divers ─────────────────────────────────────────────────────────────────
+X11Forwarding no
+PrintMotd no
+AcceptEnv LANG LC_*
+Subsystem sftp /usr/lib/openssh/sftp-server
+
+# ── Drop-ins ───────────────────────────────────────────────────────────────
+# Laisse les éventuels fichiers de conf.d (devsec.hardening en session 2)
+# compléter cette base.
+Include /etc/ssh/sshd_config.d/*.conf
