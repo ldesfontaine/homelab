@@ -2,7 +2,7 @@
 # ===========================================================================
 # Inventaire statique du homelab
 # ===========================================================================
-# Référence : docs/decisions/ADR-000-fondations-ansible.md (ADR-003)
+# Référence : docs/adr/ADR-000-fondations-ansible.md (ADR-003)
 #
 # Aujourd'hui : VPS uniquement.
 # Demain (phase Proxmox) : ajout de inventory/01-proxmox.proxmox.yml qui

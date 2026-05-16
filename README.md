@@ -7,7 +7,7 @@ Toute la conception, les choix d'architecture et les contraintes sont dans le **
 ## Documentation
 
 - **Cahier des charges** : `docs/cahier-des-charges-homelab.md` — la vision et l'architecture cible
-- **Décisions techniques (ADR)** : `docs/decisions/` — l'ADR-000 est le document fondateur du repo Ansible, à lire avant toute contribution
+- **Décisions techniques (ADR)** : `docs/adr/` — l'ADR-000 est le document fondateur du repo Ansible, à lire avant toute contribution
 - **Runbooks opérationnels** : `docs/runbooks/` — procédures de DR, mise à jour, rotation de secrets, etc.
 
 ## Stack
@@ -56,7 +56,7 @@ pre-commit run --all-files
 
 ## Conventions
 
-Tout est codé dans `docs/decisions/ADR-000-fondations-ansible.md`. Lis-le.
+Tout est codé dans `docs/adr/ADR-000-fondations-ansible.md`. Lis-le.
 
 Commits : Conventional Commits, **aucun co-auteur IA**. Tous les commits au nom de `ldesfontaine`.
 
