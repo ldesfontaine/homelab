@@ -1,0 +1,43 @@
+---
+# ===========================================================================
+# Rôle `unattended_upgrades` — installation et configuration
+# ===========================================================================
+
+- name: Install unattended-upgrades packages
+  ansible.builtin.apt:
+    name: "{{ _unattended_upgrades_packages }}"
+    state: present
+    cache_valid_time: 3600
+  tags:
+    - unattended-upgrades
+
+- name: Deploy 50unattended-upgrades config
+  ansible.builtin.template:
+    src: 50unattended-upgrades.j2
+    dest: "{{ _unattended_upgrades_config_path }}"
+    owner: root
+    group: root
+    mode: '0644'
+    backup: true
+  notify: Restarting unattended-upgrades
+  tags:
+    - unattended-upgrades
+
+- name: Deploy 20auto-upgrades periodic config
+  ansible.builtin.template:
+    src: 20auto-upgrades.j2
+    dest: "{{ _unattended_upgrades_periodic_path }}"
+    owner: root
+    group: root
+    mode: '0644'
+    backup: true
+  tags:
+    - unattended-upgrades
+
+- name: Ensure unattended-upgrades service is enabled
+  ansible.builtin.service:
+    name: unattended-upgrades
+    state: started
+    enabled: true
+  tags:
+    - unattended-upgrades

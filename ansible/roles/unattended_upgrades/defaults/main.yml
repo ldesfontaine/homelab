@@ -1,0 +1,36 @@
+---
+# ===========================================================================
+# Variables surchargeables du rôle `unattended_upgrades`
+# ===========================================================================
+# Politique stricte alignée sur le cahier des charges section 16.2 :
+#   - Debian-Security UNIQUEMENT (pas d'updates "standard")
+#   - PAS de reboot automatique
+#   - PAS de DevRelease, PAS d'Allow-downgrade
+# Tout changement de politique doit être tracé dans un ADR.
+# ===========================================================================
+
+# Origines autorisées pour les upgrades automatiques. `${distro_codename}` est
+# une substitution APT native (pas du Jinja) — laissée littérale dans le
+# template pour qu'APT la résolve à l'exécution.
+unattended_upgrades_origins:
+  - "origin=Debian,codename=${distro_codename},label=Debian-Security"
+
+unattended_upgrades_automatic_reboot: false
+unattended_upgrades_dev_release: false
+unattended_upgrades_allow_downgrade: false
+
+unattended_upgrades_remove_unused_kernel_packages: true
+unattended_upgrades_remove_new_unused_dependencies: true
+# Conservative : on ne supprime PAS les dépendances inutilisées existantes
+unattended_upgrades_remove_unused_dependencies: false
+
+# Mail destinataire — laisser vide tant qu'on n'a pas de MTA local (les
+# rapports finissent dans /var/log/unattended-upgrades/).
+unattended_upgrades_mail: ""
+unattended_upgrades_mail_on_error_only: true
+
+# Fréquences APT (en jours) — apt-daily.timer (Update-Package-Lists)
+# et apt-daily-upgrade.timer (Unattended-Upgrade)
+unattended_upgrades_update_package_lists: 1
+unattended_upgrades_unattended_upgrade: 1
+unattended_upgrades_autoclean_interval: 7

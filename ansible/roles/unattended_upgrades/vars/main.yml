@@ -1,0 +1,13 @@
+---
+# ===========================================================================
+# Constantes internes au rôle `unattended_upgrades`
+# ===========================================================================
+# Préfixées par `_` selon la convention ADR-000 Décision 2.
+# ===========================================================================
+
+_unattended_upgrades_packages:
+  - unattended-upgrades
+  - apt-listchanges
+
+_unattended_upgrades_config_path: /etc/apt/apt.conf.d/50unattended-upgrades
+_unattended_upgrades_periodic_path: /etc/apt/apt.conf.d/20auto-upgrades
