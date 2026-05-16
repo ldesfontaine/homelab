@@ -1,7 +1,7 @@
 # ADR 001 — Stack technique initiale
 
 ## Statut
-Accepté, 2026-XX-XX
+Accepté, 2026-05-11
 
 ## Contexte
 Construction d'un homelab familial avec contraintes : souveraineté, IaC, sécu, budget contenu.

@@ -457,5 +457,5 @@ Versions exactes pinées dans `requirements.txt` et `requirements.yml`.
 
 | Date | Version | Changement |
 |---|---|---|
-| (à remplir) | 1.0 | Création initiale — fondations Ansible homelab |
-| (à remplir) | 1.1 | ADR-004 : suppression du password root du vault, clé SSH uniquement, auto-détection du port via `_detect-ssh.yml`. Ajout ADR-011 (permissions/propriété fichiers explicites). Ajout ADR-012 (domaine en variable). Mise à jour ADR-008 inventaire des secrets attendus (sans password Linux). Anti-patterns enrichis. |
+| (2026-05-15) | 1.0 | Création initiale — fondations Ansible homelab |
+| (2026-05-15) | 1.1 | ADR-004 : suppression du password root du vault, clé SSH uniquement, auto-détection du port via `_detect-ssh.yml`. Ajout ADR-011 (permissions/propriété fichiers explicites). Ajout ADR-012 (domaine en variable). Mise à jour ADR-008 inventaire des secrets attendus (sans password Linux). Anti-patterns enrichis. |
