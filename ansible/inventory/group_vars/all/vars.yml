@@ -37,7 +37,7 @@ ssh_target_user: deploy
 # Le bootstrap pose ces clés dans ~deploy/.ssh/authorized_keys
 # ──────────────────────────────────────────────────────────────────────────
 admin_ssh_public_keys:
-  - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIO2inxgzLQNpPmDBIFK8UyoY6Leamej8Eict7AcbYR1M vps-soc-2026"
+  - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM5L/5cyHBvo/VeSqxEytMZlZDSvYVzpTQ1wmep0/OE8 homelab"
 
 # ──────────────────────────────────────────────────────────────────────────
 # Clé privée SSH admin utilisée pour s'authentifier sur toutes les machines
