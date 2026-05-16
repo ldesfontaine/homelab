@@ -2,7 +2,7 @@
 
 > **Document fondateur** — toute évolution du repo Ansible (rôles, playbooks, inventaire) DOIT respecter ces décisions. En cas de divergence : ce fichier fait foi. Toute exception est tracée dans un nouvel ADR.
 
-> **Statut** : actif — `v1.1` — auteur `ldesfontaine`
+> **Statut** : actif — `v1.2` — auteur `ldesfontaine`
 
 ---
 
@@ -20,7 +20,7 @@ Aujourd'hui on bootstrap juste le VPS, mais **chaque décision ci-dessous est pr
 
 ---
 
-## ADR-001 — Provisioning du VPS
+## Décision 1 — Provisioning du VPS
 
 **Décision** : provisioning **manuel** via la console Hetzner. Pas de Terraform pour l'instant.
 
@@ -30,7 +30,7 @@ Aujourd'hui on bootstrap juste le VPS, mais **chaque décision ci-dessous est pr
 
 ---
 
-## ADR-002 — Approche Ansible : structure et conventions
+## Décision 2 — Approche Ansible : structure et conventions
 
 **Décision** : **rôles autonomes, idempotents, sans dépendance croisée**. L'ordre d'exécution est piloté par les playbooks, **jamais** par les `meta/main.yml` des rôles.
 
@@ -46,7 +46,7 @@ Aujourd'hui on bootstrap juste le VPS, mais **chaque décision ci-dessous est pr
 8. **Handlers** pour les redémarrages de services — jamais de `notify` vers une tâche, toujours vers un handler nommé.
 9. **`backup: yes`** sur tout module qui édite un fichier critique (template, lineinfile, copy).
 10. **Validation avant reload** sur les services critiques : `validate: 'sshd -t -f %s'` pour sshd_config, `validate: 'nginx -t -c %s'` pour nginx, etc.
-11. **Tous les modules de fichier (template/copy/file/lineinfile) ont `mode`, `owner`, `group` explicites**. Aucun fichier ne s'appuie sur le umask par défaut (cf. ADR-011).
+11. **Tous les modules de fichier (template/copy/file/lineinfile) ont `mode`, `owner`, `group` explicites**. Aucun fichier ne s'appuie sur le umask par défaut (cf. Décision 11).
 
 **Conventions de nommage** :
 
@@ -61,7 +61,7 @@ Aujourd'hui on bootstrap juste le VPS, mais **chaque décision ci-dessous est pr
 
 ---
 
-## ADR-003 — Inventaire : statique aujourd'hui, dynamic-ready demain
+## Décision 3 — Inventaire : statique aujourd'hui, dynamic-ready demain
 
 **Décision** : inventaire **multi-source** dès le départ. Aujourd'hui, un seul fichier statique. Demain, ajout transparent du dynamic inventory Proxmox.
 
@@ -90,7 +90,7 @@ ansible/inventory/
 
 ---
 
-## ADR-004 — Bootstrap SSH idempotent — clé uniquement + auto-détection du port
+## Décision 4 — Bootstrap SSH idempotent — clé uniquement + auto-détection du port
 
 **Décision** : le bootstrap repose **uniquement sur la clé SSH** (jamais de password). Le port SSH est défini par variable, peut être différent par machine, et est **auto-détecté à chaque run** pour que n'importe quel playbook fonctionne quel que soit l'état de la machine.
 
@@ -169,7 +169,7 @@ L'ordre est non négociable (un bug ici = perte de la machine) :
 
 ---
 
-## ADR-005 — Hardening : `devsec.hardening` + rôle custom
+## Décision 5 — Hardening : `devsec.hardening` + rôle custom
 
 **Décision** : on **délègue le hardening lourd** (sshd ciphers/KEX/MACs, sysctl réseau, login.defs, etc.) à la collection officielle **`devsec.hardening`** (anciennement `dev-sec`), basée sur les benchmarks CIS et maintenue activement.
 
@@ -185,7 +185,7 @@ Notre rôle `hardening` maison fait **uniquement** ce qui n'est pas couvert par 
 ```yaml
 collections:
   - name: devsec.hardening
-    version: "==10.0.0"          # version à valider au moment du bootstrap
+    version: ">=10.0.0,<11.0.0"  # range mineur — sécurité upstream sans intervention
   - name: community.docker
     version: ">=3.10.0,<4.0.0"
   - name: community.general
@@ -196,9 +196,11 @@ collections:
 
 **Justification** : pas de réinvention de la roue, on bénéficie des audits CIS upstream, on remonte les updates upstream. Si devsec.hardening introduit un breaking change, le pin de version nous protège.
 
+**Policy de pinning** : range mineur (`>=X.0.0,<X+1.0.0`) pour toutes les collections externes — permet les correctifs upstream (bugs, sécurité) sans intervention manuelle, tout en bloquant les bumps majeurs potentiellement breaking. Le `ansible/requirements.yml` est la source de vérité opérationnelle ; cette décision donne la policy.
+
 ---
 
-## ADR-006 — Portfolio : image GHCR, pas de build sur le VPS
+## Décision 6 — Portfolio : image GHCR, pas de build sur le VPS
 
 **Décision** : le rôle `portfolio` **pull** l'image `ghcr.io/ldesfontaine/portfolio:<tag>` depuis GHCR (image multi-stage déjà publiée par le CI GitHub Actions du repo portfolio, signée cosign). **Aucun build sur le VPS.**
 
@@ -229,7 +231,7 @@ portfolio_container_port: 3000                      # interne au réseau Docker
 
 ---
 
-## ADR-007 — Reverse proxy public : Pangolin (Traefik embarqué)
+## Décision 7 — Reverse proxy public : Pangolin (Traefik embarqué)
 
 **Décision** : sur le VPS, **Pangolin** est le seul reverse proxy public. Il embarque sa propre instance Traefik (cf. cahier section 5 — "Reverse proxy public : Traefik (embarqué dans Pangolin)").
 
@@ -245,7 +247,7 @@ portfolio_container_port: 3000                      # interne au réseau Docker
 
 ---
 
-## ADR-008 — Secrets : ansible-vault
+## Décision 8 — Secrets : ansible-vault
 
 **Décision** : **tous les secrets** sont chiffrés via `ansible-vault` dans des fichiers `vault.yml` dédiés. Jamais en clair dans Git.
 
@@ -284,7 +286,7 @@ Ce fichier est dans le `.gitignore`. Procédure de récupération du mot de pass
 
 ---
 
-## ADR-009 — Conventions de commit
+## Décision 9 — Conventions de commit
 
 **Décision** : commits **conventionnels** (Conventional Commits), signés, **sans co-auteur IA**.
 
@@ -306,7 +308,7 @@ Ce fichier est dans le `.gitignore`. Procédure de récupération du mot de pass
 
 - `feat(hardening): add chrony role with timezone enforcement`
 - `fix(pangolin): correct cloudflare DNS-01 resolver config`
-- `docs(adr): clarify ADR-006 image pull strategy`
+- `docs(adr): clarify Décision 6 image pull strategy`
 
 **Règles strictes** :
 
@@ -319,7 +321,7 @@ Ce fichier est dans le `.gitignore`. Procédure de récupération du mot de pass
 
 ---
 
-## ADR-010 — Sécurité by design : check-list
+## Décision 10 — Sécurité by design : check-list
 
 À cocher avant tout merge sur `main` :
 
@@ -331,16 +333,16 @@ Ce fichier est dans le `.gitignore`. Procédure de récupération du mot de pass
 - [ ] `no_log: true` sur les tasks sensibles
 - [ ] `validate:` sur les fichiers de conf critiques (sshd, nginx, ufw, etc.)
 - [ ] `backup: yes` sur les édits de fichiers système critiques
-- [ ] **`mode`/`owner`/`group` explicites sur tous les modules de fichier** (cf. ADR-011)
+- [ ] **`mode`/`owner`/`group` explicites sur tous les modules de fichier** (cf. Décision 11)
 - [ ] Variables `vault_*` jamais référencées directement dans les rôles (toujours via une variable applicative dans `group_vars/`)
 - [ ] Fichier `vault.yml` chiffré (`ansible-vault view` requiert le mot de passe)
 - [ ] `.gitignore` couvre `*.retry`, `vault-pass*`, `.venv/`, `.cache/`, etc.
 - [ ] Document de rollback documenté dans `docs/runbooks/` pour les changements impactant la prod
-- [ ] **Aucune chaîne littérale `ldesfontaine.com` dans le code** — utilisation systématique de `homelab_domain`/`homelab_fqdn_*` (cf. ADR-012)
+- [ ] **Aucune chaîne littérale `ldesfontaine.com` dans le code** — utilisation systématique de `homelab_domain`/`homelab_fqdn_*` (cf. Décision 12)
 
 ---
 
-## ADR-011 — Permissions et propriété des fichiers — explicites toujours
+## Décision 11 — Permissions et propriété des fichiers — explicites toujours
 
 **Décision** : tous les modules Ansible qui posent ou modifient un fichier (`template`, `copy`, `file`, `lineinfile`, `blockinfile`, `assemble`) DOIVENT spécifier `mode`, `owner`, `group` de manière **explicite**. Le umask par défaut n'est jamais une source acceptable.
 
@@ -393,7 +395,7 @@ Ce fichier est dans le `.gitignore`. Procédure de récupération du mot de pass
 
 ---
 
-## ADR-012 — Domaine en variable — jamais hardcodé
+## Décision 12 — Domaine en variable — jamais hardcodé
 
 **Décision** : aucune chaîne littérale `ldesfontaine.com` ou subdomain littéral dans le code. Tout passe par des variables centralisées dans `group_vars/all/vars.yml`.
 
@@ -421,7 +423,7 @@ homelab_fqdn_auth: "{{ homelab_subdomain_auth }}.{{ homelab_domain }}"
 **Règles** :
 
 - Tous les rôles utilisent `{{ homelab_fqdn_* }}` ou `{{ homelab_domain }}`. **Jamais** de littéral `ldesfontaine.com` ailleurs.
-- Le check-list ADR-010 contient une étape de vérification : `grep -rE "ldesfontaine\.(com|fr|dev)" roles/ playbooks/ templates/` doit retourner zéro résultat (sauf dans `group_vars/all/vars.yml` qui est la source de vérité).
+- Le check-list Décision 10 contient une étape de vérification : `grep -rE "ldesfontaine\.(com|fr|dev)" roles/ playbooks/ templates/` doit retourner zéro résultat (sauf dans `group_vars/all/vars.yml` qui est la source de vérité).
 - Le **token API Cloudflare** est lié à la zone DNS. Si le domaine change, il faut le rotater. Procédure dans `docs/runbooks/change-domain.md` (à créer quand applicable).
 
 **Test** : pour valider le respect de cette règle, un hook pre-commit (à ajouter) peut faire le grep et refuser le commit s'il trouve une occurrence interdite.
@@ -458,4 +460,5 @@ Versions exactes pinées dans `requirements.txt` et `requirements.yml`.
 | Date | Version | Changement |
 |---|---|---|
 | (2026-05-15) | 1.0 | Création initiale — fondations Ansible homelab |
-| (2026-05-15) | 1.1 | ADR-004 : suppression du password root du vault, clé SSH uniquement, auto-détection du port via `_detect-ssh.yml`. Ajout ADR-011 (permissions/propriété fichiers explicites). Ajout ADR-012 (domaine en variable). Mise à jour ADR-008 inventaire des secrets attendus (sans password Linux). Anti-patterns enrichis. |
+| (2026-05-15) | 1.1 | Décision 4 : suppression du password root du vault, clé SSH uniquement, auto-détection du port via `_detect-ssh.yml`. Ajout Décision 11 (permissions/propriété fichiers explicites). Ajout Décision 12 (domaine en variable). Mise à jour Décision 8 inventaire des secrets attendus (sans password Linux). Anti-patterns enrichis. (Note v1.2 : ces sections s'appelaient encore "ADR-XXX" lors de la rédaction de v1.1.) |
+| 2026-05-16 | 1.2 | Renommage des sections internes "ADR-XXX" → "Décision X" pour éviter la confusion avec les fichiers ADR du dossier `docs/adr/`. Alignement du pin `devsec.hardening` avec `ansible/requirements.yml` (range mineur). Ajout policy de pinning. |
