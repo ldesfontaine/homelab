@@ -16,7 +16,7 @@ all:
       hosts:
         vps-pangolin:
           # IP publique du VPS Hetzner — à renseigner avant le premier run
-          ansible_host: REPLACE_ME_WITH_VPS_PUBLIC_IP
+          ansible_host: 62.72.36.161
           # Connexion gérée par les variables globales (ADR-004)
           ansible_port: "{{ ssh_target_port }}"
           ansible_user: "{{ ssh_target_user }}"

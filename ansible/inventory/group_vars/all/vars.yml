@@ -37,7 +37,7 @@ ssh_target_user: deploy
 # Le bootstrap pose ces clés dans ~deploy/.ssh/authorized_keys
 # ──────────────────────────────────────────────────────────────────────────
 admin_ssh_public_keys:
-  - "ssh-ed25519 REPLACE_ME_WITH_YOUR_ACTUAL_PUBKEY ldesfontaine@laptop"
+  - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIO2inxgzLQNpPmDBIFK8UyoY6Leamej8Eict7AcbYR1M vps-soc-2026"
 
 # ──────────────────────────────────────────────────────────────────────────
 # Référence vers le token Cloudflare (DNS-01 pour Let's Encrypt)
