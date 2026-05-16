@@ -36,10 +36,11 @@
 - name: Install admin SSH public keys for deploy
   ansible.posix.authorized_key:
     user: "{{ bootstrap_target_user }}"
+    path: "/home/{{ bootstrap_target_user }}/.ssh/authorized_keys"
     key: "{{ bootstrap_admin_ssh_keys | join('\n') }}"
     state: present
     exclusive: true
-    manage_dir: true
+    manage_dir: false
   no_log: true
 
 - name: Enforce 0600 on deploy authorized_keys
