@@ -1,0 +1,19 @@
+---
+galaxy_info:
+  author: ldesfontaine
+  description: Deploy legal-warning login banner in /etc/issue.net
+  license: MIT
+  min_ansible_version: '2.17'
+  platforms:
+    - name: Debian
+      versions:
+        - trixie
+  galaxy_tags:
+    - system
+    - homelab
+    - security
+    - banner
+
+# Décision 2 de l'ADR-000 : pas de dépendances inter-rôles, l'ordre est
+# piloté par les playbooks.
+dependencies: []

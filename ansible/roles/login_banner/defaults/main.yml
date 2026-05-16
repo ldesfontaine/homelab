@@ -1,0 +1,22 @@
+---
+# ===========================================================================
+# Variables surchargeables du rôle `login_banner`
+# ===========================================================================
+# Banner déployé dans /etc/issue.net et référencé par sshd via la directive
+# `Banner` (posée par devsec.hardening.ssh_hardening — variables
+# `ssh_banner` / `ssh_banner_path` côté rôle `hardening`).
+#
+# Le texte peut référencer `{{ homelab_domain }}` ou toute autre variable
+# globale — Ansible évalue le Jinja imbriqué au moment du rendu du template.
+# ===========================================================================
+
+login_banner_text: |
+  ##############################################################
+  #                                                            #
+  #   AUTHORIZED ACCESS ONLY                                   #
+  #                                                            #
+  #   This system is the private property of {{ homelab_domain }}.
+  #   All connections are monitored and recorded.              #
+  #   Unauthorized access is strictly prohibited.              #
+  #                                                            #
+  ##############################################################
