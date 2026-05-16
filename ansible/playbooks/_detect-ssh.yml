@@ -29,6 +29,7 @@
       delegate_to: localhost
       register: _detect_ssh_target
       failed_when: false
+      check_mode: false
 
     - name: Use target credentials when target port is reachable
       ansible.builtin.debug:
@@ -46,6 +47,7 @@
       delegate_to: localhost
       register: _detect_ssh_bootstrap
       failed_when: false
+      check_mode: false
       when: _detect_ssh_target.state | default('') != 'started'
 
     - name: Fall back to bootstrap credentials
@@ -55,6 +57,7 @@
       when:
         - _detect_ssh_target.state | default('') != 'started'
         - _detect_ssh_bootstrap.state | default('') == 'started'
+      check_mode: false
 
     - name: Announce bootstrap credentials fallback
       ansible.builtin.debug:
