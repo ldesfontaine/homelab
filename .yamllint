@@ -22,3 +22,4 @@ ignore: |
   .venv/
   .cache/
   .collections/
+  ansible/inventory/group_vars/*/vault.yml
