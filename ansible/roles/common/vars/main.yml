@@ -1,0 +1,9 @@
+---
+# ===========================================================================
+# Constantes internes du rôle `common` (préfixe `_`)
+# ===========================================================================
+# Ces valeurs ne sont PAS censées être override depuis l'extérieur du rôle.
+# ===========================================================================
+
+_common_chrony_conf_path: /etc/chrony/chrony.conf
+_common_default_locale_path: /etc/default/locale

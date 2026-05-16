@@ -1,0 +1,20 @@
+---
+- name: Set system timezone to {{ common_timezone }}
+  community.general.timezone:
+    name: "{{ common_timezone }}"
+
+- name: Generate locale {{ common_locale }}
+  community.general.locale_gen:
+    name: "{{ common_locale }}"
+    state: present
+
+- name: Set default system locale
+  ansible.builtin.copy:
+    dest: "{{ _common_default_locale_path }}"
+    content: |
+      LANG={{ common_locale }}
+      LC_ALL={{ common_locale }}
+    owner: root
+    group: root
+    mode: '0644'
+    backup: true

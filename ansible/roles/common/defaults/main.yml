@@ -1,0 +1,40 @@
+---
+# ===========================================================================
+# Variables surchargeables du rôle `common`
+# ===========================================================================
+# Toutes ces variables peuvent être override dans group_vars/<groupe>/vars.yml
+# ou via -e sur la CLI. Les constantes internes au rôle vivent dans vars/main.yml
+# avec un préfixe `_`.
+# ===========================================================================
+
+# Timezone système — défaut tiré de group_vars/all/vars.yml (system_timezone)
+common_timezone: "{{ system_timezone | default('Europe/Paris') }}"
+
+# Locale système — défaut tiré de group_vars/all/vars.yml (system_locale)
+common_locale: "{{ system_locale | default('en_US.UTF-8') }}"
+
+# Paquets de base installés sur toutes les machines
+common_packages:
+  - curl
+  - wget
+  - vim
+  - git
+  - htop
+  - tmux
+  - ca-certificates
+  - gnupg
+  - lsb-release
+  - apt-transport-https
+  - rsync
+  - jq
+  - unzip
+  - net-tools
+  - dnsutils
+
+# Serveurs NTP par défaut — pools Debian (concept critique 14.7 du cahier)
+# Override possible par groupe si une machine doit pointer vers un serveur local.
+common_chrony_servers:
+  - 0.debian.pool.ntp.org iburst
+  - 1.debian.pool.ntp.org iburst
+  - 2.debian.pool.ntp.org iburst
+  - 3.debian.pool.ntp.org iburst

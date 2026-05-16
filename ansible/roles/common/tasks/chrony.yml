@@ -1,0 +1,22 @@
+---
+- name: Install chrony
+  ansible.builtin.apt:
+    name: chrony
+    state: present
+    cache_valid_time: 3600
+
+- name: Deploy chrony configuration
+  ansible.builtin.template:
+    src: chrony.conf.j2
+    dest: "{{ _common_chrony_conf_path }}"
+    owner: root
+    group: root
+    mode: '0644'
+    backup: true
+  notify: Restarting chrony
+
+- name: Ensure chrony service is enabled and running
+  ansible.builtin.service:
+    name: chrony
+    state: started
+    enabled: true
