@@ -361,32 +361,13 @@ Une fois le laptop connecté, la section `peer: <pubkey laptop>` doit afficher :
 
 Idem pour le phone après activation.
 
-### 7.2. Accès dashboard Pangolin — pourquoi le tunnel WG ne suffit pas (SSH tunnel à la place)
+### 7.2. Accès dashboard Pangolin — limitation acceptée, reportée phase 11
 
-**Le tunnel WG n'est PAS la bonne voie pour atteindre le dashboard Pangolin.** Pangolin est une application Host-aware : son middleware Express route en fonction du `Host` header pour servir login + UI complète. Un binding `IP:port:port` direct depuis le tunnel WG renvoie `404 Cannot GET /` sur la racine. Une tentative précédente d'exposer `10.99.10.1:3000:3000` côté compose pangolin a été retirée pour cette raison (cf. commit `revert(pangolin): drop wg-admin port binding`).
+**Le dashboard Pangolin n'est pas atteignable via le tunnel admin de cette session — ni par binding IP:port direct, ni par SSH tunnel.** Pangolin est une application **Host-aware** : son middleware Next.js compare le `Host` header reçu à la `dashboard_url` configurée (`pangolin.ldesfontaine.com`), et empile des vérifications additionnelles (origin CSRF, cookies de session liés au domaine). Conséquence : toute tentative de joindre le dashboard via une URL ne correspondant pas au FQDN configuré — qu'on tape directement `http://10.99.10.1:3000`, qu'on monte un SSH tunnel `localhost:3000 → container:3000`, ou qu'on bricole un `--header "Host: pangolin.ldesfontaine.com"` — renvoie `404` ou `403` même quand le serveur est joint correctement au niveau TCP. Une tentative initiale d'exposer `10.99.10.1:3000:3000` côté compose pangolin a été retirée pour cette raison (cf. commit `revert(pangolin): drop wg-admin port binding`), et l'option SSH tunnel a été testée puis abandonnée pour les mêmes raisons.
 
-**Approche actuelle — SSH tunnel** : on s'appuie sur l'exception `AllowTcpForwarding yes` posée pour le user `deploy` (cf. rôle `hardening`, runbook session-2 §4.3). Depuis le laptop :
+**Décision session 6 — limitation acceptée.** Le tunnel admin reste utile et nécessaire pour la catégorie des services **IP-friendly** (OPNsense, monitoring, coffres, tout service qui répond à une IP nue). Pour Pangolin, qui est **Host-aware**, on accepte de ne pas avoir d'accès admin pendant la phase actuelle. La classification "IP-friendly vs Host-aware" est formalisée dans [ADR-003](../adr/ADR-003-services-host-aware-vs-ip-friendly.md).
 
-```bash
-# Récupérer d'abord l'IP du container pangolin sur le réseau pangolin-net
-ssh -p 2203 deploy@<ip-vps> \
-  "sudo docker inspect pangolin -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}'"
-# Exemple : 172.19.0.2
-
-# Ouvrir un SSH tunnel local 3000 → container pangolin:3000
-ssh -p 2203 -L 3000:172.19.0.2:3000 -N -f deploy@<ip-vps>
-
-# Le dashboard est maintenant joignable
-xdg-open http://localhost:3000     # Linux
-# ou : open http://localhost:3000  # macOS
-
-# Pour fermer le tunnel
-pkill -f 'ssh -p 2203 -L 3000:172.19.0.2:3000'
-```
-
-L'IP container peut changer si Docker recompose le bridge. Si le tunnel ne répond plus, ré-exécuter le `docker inspect` pour récupérer la nouvelle IP. Alternative plus robuste à terme : un alias DNS Docker côté host (resolver local) — non câblé pour l'instant.
-
-**Solution durable — Phase 11** : exposition publique de `pangolin.ldesfontaine.com` derrière Authentik (OIDC) + reverse proxy interne. Alors et seulement alors le dashboard sera atteignable via FQDN, sans tunnel SSH ni binding direct. Le tunnel WG de cette session reste utile pour les **autres** futurs services internes (monitoring, coffre, etc.) qui n'ont pas l'architecture Host-aware de Pangolin.
+**Résolution — Phase 11.** Exposition publique de `pangolin.ldesfontaine.com` derrière Authentik (OIDC) + reverse proxy interne. Le dashboard sera alors atteignable par son FQDN, en passant par la chaîne d'auth Authentik, sans tunnel ni binding direct. C'est la voie d'admin standard pour tous les services Host-aware du homelab à venir.
 
 ### 7.3. Bascule laptop ↔ phone
 
@@ -594,6 +575,8 @@ La nouvelle pubkey s'affiche en sortie de run. **Mettre à jour les fichiers `.c
 
 ## 12. Limites connues — reportées aux sessions suivantes
 
+- **Dashboard Pangolin via tunnel admin** : architecture Host-aware (check du `Host` header + CSRF/cookies liés au FQDN) incompatible avec un accès IP+port direct, que ce soit via WG ou SSH tunnel. Limitation acceptée pour la session 6, résolution prévue en phase 11 (Authentik OIDC + exposition publique de `pangolin.ldesfontaine.com`). Voir §7.2 et [ADR-003](../adr/ADR-003-services-host-aware-vs-ip-friendly.md).
+- **`net.ipv4.ip_forward` — désaccord sysctl entre rôles** : `devsec.hardening` pose `= 0` (durcissement kernel par défaut), `wg_admin_hub` pose `= 1` (nécessaire au routage WG). Fonctionnellement OK car le `PostUp` de `wg-quick` force `sysctl -w net.ipv4.ip_forward=1` à l'activation de l'interface, mais l'idempotence stricte du sysctl n'est pas garantie (l'ordre des rôles à un `ansible-playbook` complet décide de la valeur écrite en dernier sur disque). À traiter dans une future session de polissage si besoin — solution probable : exclure `net.ipv4.ip_forward` de la liste sysctl pilotée par `devsec.hardening`, ou poser la valeur définitive dans un `/etc/sysctl.d/90-wg-admin-hub.conf` de précédence supérieure.
 - **Pas de PresharedKey** : aujourd'hui, seule la paire de clés WG protège chaque peer. À ajouter si modèle de menace évolue (compromission d'un device client).
 - **Pas de tunnel full** : split-tunnel uniquement (`AllowedIPs = 10.99.10.0/24` côté client). Pas de NAT sortant sur le hub.
 - **Pas de monitoring/alerting** : pas de notification si l'unit `wg-quick@wg-admin` plante au boot. À câbler quand monitoring sera en place (Grafana/Loki ou alertmanager).
@@ -606,4 +589,4 @@ La nouvelle pubkey s'affiche en sortie de run. **Mettre à jour les fichiers `.c
 
 | Date | Opérateur | `changed=` (wg_admin_hub) | Tunnel laptop OK ? | Tunnel phone OK ? | Notes |
 |---|---|---|---|---|---|
-|  |  |  |  |  |  |
+| 2026-05-17 | `ldesfontaine` | `changed=0` final sur les 2 playbooks | ✅ (38 KiB échangés) | ✅ (1.99 KiB échangés) | Dashboard Pangolin reporté phase 11 (Host-aware, cf. §7.2 + ADR-003). |
