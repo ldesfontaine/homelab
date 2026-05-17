@@ -1,0 +1,9 @@
+---
+# ===========================================================================
+# Constantes internes au rôle `ufw_docker`
+# ===========================================================================
+# Préfixées par `_` selon la convention ADR-000 Décision 2.
+# ===========================================================================
+
+_ufw_docker_after_rules_path: /etc/ufw/after.rules
+_ufw_docker_ufw_package: ufw

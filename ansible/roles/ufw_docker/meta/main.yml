@@ -1,0 +1,22 @@
+---
+galaxy_info:
+  author: ldesfontaine
+  description: Integrate chaifeng/ufw-docker default-deny rules into the DOCKER-USER iptables chain (ADR-002)
+  license: MIT
+  min_ansible_version: '2.17'
+  platforms:
+    - name: Debian
+      versions:
+        - trixie
+  galaxy_tags:
+    - system
+    - homelab
+    - firewall
+    - ufw
+    - docker
+    - security
+
+# ADR-000 Décision 2 : pas de dépendances inter-rôles, l'ordre est piloté
+# par les playbooks. Le rôle `docker` doit avoir été joué AVANT (chaîne
+# DOCKER-USER créée par Docker), mais on n'enforce pas via meta.
+dependencies: []

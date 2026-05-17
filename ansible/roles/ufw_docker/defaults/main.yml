@@ -1,0 +1,17 @@
+---
+# ===========================================================================
+# Variables surchargeables du rôle `ufw_docker`
+# ===========================================================================
+# Référence : docs/adr/ADR-002-firewall-strategy.md (Option C, couche 2)
+# Inspiré de https://github.com/chaifeng/ufw-docker (intégration DOCKER-USER)
+# ===========================================================================
+
+# Bornes du fragment dans /etc/ufw/after.rules — gérées par blockinfile
+ufw_docker_marker: "# {mark} ANSIBLE MANAGED BLOCK ufw-docker integration (ADR-002)"
+
+# Réseaux privés autorisés en RETURN (NON filtrés par notre intégration)
+# RFC1918 par défaut. Override possible si on ajoute un VLAN custom.
+ufw_docker_private_networks:
+  - 10.0.0.0/8
+  - 172.16.0.0/12
+  - 192.168.0.0/16
