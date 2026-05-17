@@ -83,3 +83,7 @@
   delay: 5
   until: _pangolin_api_health.rc == 0
   changed_when: false
+  # Read-only health probe — autorisée en --check pour valider l'idempotence
+  # complète du rôle sans avoir à skip ce step. Sans ça, le module est skip
+  # par --check et ne pose pas .rc, ce qui fait planter le `until` ci-dessus.
+  check_mode: false
