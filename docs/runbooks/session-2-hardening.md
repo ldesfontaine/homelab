@@ -113,6 +113,29 @@ Attendu :
 - `loginGracetime 30`
 - `maxstartups 10:30:60`
 
+#### AllowTcpForwarding — exception ciblée pour `deploy`
+
+Baseline devsec : `AllowTcpForwarding no` globalement. Le rôle `hardening` pose un drop-in supplémentaire `/etc/ssh/sshd_config.d/99-tcp-forwarding-users.conf` qui réactive le forwarding via un bloc `Match User` pour les users listés dans `hardening_ssh_tcp_forwarding_users` (par défaut : `[deploy]`). Vérification :
+
+```bash
+# Globalement : forwarding interdit
+ssh -p 2203 deploy@<ip> 'sudo sshd -T | grep -i allowtcpforwarding'
+# Attendu : allowtcpforwarding no
+
+# Pour le user deploy : forwarding autorisé (Match override)
+ssh -p 2203 deploy@<ip> 'sudo sshd -T -C user=deploy,host=localhost,addr=127.0.0.1 | grep -i allowtcpforwarding'
+# Attendu : allowtcpforwarding yes
+
+# Test bout-en-bout — SSH tunnel vers une socket arbitraire (port 22 de localhost)
+ssh -p 2203 -L 12222:127.0.0.1:22 -N -f deploy@<ip>
+nc -zv localhost 12222   # doit répondre "succeeded"
+pkill -f 'ssh -p 2203 -L 12222'
+```
+
+Cas d'usage immédiat (session 6+) : `ssh -p 2203 -L 3000:127.0.0.1:3000 deploy@<ip>` pour atteindre le dashboard Pangolin via `http://localhost:3000` depuis le laptop (Pangolin route par Host header en interne — l'accès "IP+port direct" ne fonctionne pas avec lui tant qu'Authentik + reverse proxy interne ne sont pas en place).
+
+Pour fermer cette exception (cas de rollback ou quand Authentik prend le relais), passer `hardening_ssh_tcp_forwarding_users: []` en override et rejouer — le drop-in est supprimé, baseline devsec restaurée.
+
 ### 4.4. fail2ban
 
 ```bash
@@ -218,6 +241,7 @@ Puis rejouer le rôle `hardening` avec le tag `hardening-ssh`.
 - **Pas de bouncer CrowdSec** : viendra avec la stack Pangolin.
 - **Pas de mail MTA** : `unattended_upgrades_mail` reste vide. Les rapports finissent dans `/var/log/unattended-upgrades/`. À reconnecter quand on aura un MTA (msmtp) ou une cible Pushover/Telegram.
 - **devsec.hardening pose `MaxAuthTries 2`** dans son drop-in, mais le `sshd_config` principal du bootstrap a `MaxAuthTries 3` qui prend la priorité (sshd : « first value wins »). Acceptable mais à harmoniser ultérieurement si on veut le 2 strict de devsec.
+- **`AllowTcpForwarding yes` pour `deploy`** (drop-in `99-tcp-forwarding-users.conf`) est une **exception ouverte de la baseline durcie**. Indispensable aujourd'hui pour atteindre le dashboard Pangolin via `ssh -L 3000:127.0.0.1:3000`. À retirer (`hardening_ssh_tcp_forwarding_users: []`) le jour où Authentik + reverse proxy interne permettront l'accès au dashboard via FQDN sans tunnel. Aucun autre user n'a cette permission — `Match User deploy` est la seule porte.
 
 ## 7. Journal d'exécution
 

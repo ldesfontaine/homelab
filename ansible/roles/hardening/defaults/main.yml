@@ -64,3 +64,22 @@ hardening_ssh_listen_addresses: []
 
 # IPv6 SSH activé (sshd + ssh client) côté devsec
 hardening_ssh_ipv6_enabled: true
+
+# ──────────────────────────────────────────────────────────────────────────
+# AllowTcpForwarding — exception ciblée par user
+# ──────────────────────────────────────────────────────────────────────────
+# Baseline devsec : `AllowTcpForwarding no` globalement (cf. ssh_hardening).
+# Ce bloc autorise les SSH tunnels (`ssh -L ...`) UNIQUEMENT pour les users
+# listés ici, via un drop-in séparé avec un bloc `Match User`.
+#
+# Cas d'usage actuel : `ssh -L 3000:127.0.0.1:3000 deploy@vps` pour
+# atteindre le dashboard Pangolin via http://localhost:3000 depuis le
+# laptop. Pangolin route en interne par Host header — l'accès "IP+port
+# direct via tunnel WG" ne marche pas avec lui tant qu'Authentik +
+# reverse proxy interne ne sont pas en place.
+#
+# Liste vide = aucun drop-in déposé, baseline devsec stricte restaurée.
+# À retirer le jour où Authentik + reverse proxy interne permettront
+# l'accès au dashboard via FQDN sans tunnel.
+hardening_ssh_tcp_forwarding_users:
+  - "{{ ssh_target_user }}"

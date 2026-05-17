@@ -8,3 +8,8 @@
 
 _hardening_devsec_os_role: devsec.hardening.os_hardening
 _hardening_devsec_ssh_role: devsec.hardening.ssh_hardening
+
+# Drop-in dédié à l'exception AllowTcpForwarding (cf. defaults). Nom choisi
+# pour charger APRÈS `99-hardening.conf` (devsec) en ordre lexicographique
+# (h < t) : la directive globale `no` est lue d'abord, le bloc Match suit.
+_hardening_ssh_tcp_forwarding_drop_in_path: /etc/ssh/sshd_config.d/99-tcp-forwarding-users.conf

@@ -24,3 +24,26 @@
     # Écoute sur toutes les interfaces (IPv4 + IPv6)
     ssh_listen_to: "{{ hardening_ssh_listen_addresses }}"
     network_ipv6_enable: "{{ hardening_ssh_ipv6_enabled }}"
+
+# `validate:` lance `sshd -t -f %s` sur le fichier rendu AVANT de le
+# déplacer en place — un Match block isolé est un sshd_config syntaxiquement
+# valide, donc la validation passe. Si la liste est vide, on supprime le
+# fichier pour revenir à la baseline devsec stricte (rollback propre).
+- name: Drop AllowTcpForwarding exception for selected admin users
+  ansible.builtin.template:
+    src: tcp-forwarding-users.conf.j2
+    dest: "{{ _hardening_ssh_tcp_forwarding_drop_in_path }}"
+    owner: root
+    group: root
+    mode: '0644'
+    backup: true
+    validate: '/usr/sbin/sshd -t -f %s'
+  when: hardening_ssh_tcp_forwarding_users | length > 0
+  notify: Restarting sshd
+
+- name: Remove AllowTcpForwarding exception drop-in when list is empty
+  ansible.builtin.file:
+    path: "{{ _hardening_ssh_tcp_forwarding_drop_in_path }}"
+    state: absent
+  when: hardening_ssh_tcp_forwarding_users | length == 0
+  notify: Restarting sshd
