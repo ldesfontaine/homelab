@@ -17,12 +17,14 @@ homelab_subdomain_portfolio: "portfolio"
 homelab_subdomain_vault: "vault"
 homelab_subdomain_files: "files"
 homelab_subdomain_auth: "auth"
+homelab_subdomain_pangolin: "pangolin"
 
 # FQDN construits — utiliser ces variables partout
 homelab_fqdn_portfolio: "{{ homelab_subdomain_portfolio }}.{{ homelab_domain }}"
 homelab_fqdn_vault: "{{ homelab_subdomain_vault }}.{{ homelab_domain }}"
 homelab_fqdn_files: "{{ homelab_subdomain_files }}.{{ homelab_domain }}"
 homelab_fqdn_auth: "{{ homelab_subdomain_auth }}.{{ homelab_domain }}"
+homelab_fqdn_pangolin: "{{ homelab_subdomain_pangolin }}.{{ homelab_domain }}"
 
 # ──────────────────────────────────────────────────────────────────────────
 # SSH bootstrap et cible (ADR-004)

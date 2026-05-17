@@ -1,0 +1,26 @@
+---
+# ===========================================================================
+# Rôle `pangolin` — fichier chapeau (include les sous-fichiers thématiques)
+# ===========================================================================
+# Référence : docs/adr/ADR-001-stack-technique.md (Pangolin = reverse proxy)
+#             docs/adr/ADR-002-firewall-strategy.md (seul container public)
+# ===========================================================================
+
+- name: Prepare pangolin directories and shared Docker network
+  ansible.builtin.include_tasks: prep.yml
+  tags:
+    - pangolin
+    - pangolin-prep
+
+- name: Deploy Pangolin compose stack and configuration files
+  ansible.builtin.include_tasks: deploy.yml
+  tags:
+    - pangolin
+    - pangolin-deploy
+
+- name: Allow inbound 80/443 (forwarded to Traefik container)
+  ansible.builtin.include_tasks: ufw-allow.yml
+  tags:
+    - pangolin
+    - pangolin-firewall
+    - firewall

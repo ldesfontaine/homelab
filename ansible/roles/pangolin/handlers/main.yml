@@ -1,0 +1,6 @@
+---
+# Pas de handler explicite : la (re)convergence du stack est gérée par
+# community.docker.docker_compose_v2 dans deploy.yml. Le file provider
+# Traefik est en `watch: true`, donc tout changement de dynamic_config.yml
+# est rechargé à chaud sans restart.
+# Fichier conservé pour la structure standard ansible-galaxy.

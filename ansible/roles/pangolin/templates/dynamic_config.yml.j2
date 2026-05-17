@@ -1,0 +1,56 @@
+# {{ ansible_managed }} — DO NOT EDIT MANUALLY
+#
+# Routes dynamiques chargées par Traefik via le file provider.
+# Ces routes s'AJOUTENT à celles que Pangolin sert via son HTTP provider
+# (pangolin:3001/api/v1/traefik-config) — pas de conflit tant qu'aucun
+# hostname n'est dupliqué.
+
+http:
+  routers:
+{% for route in pangolin_routes %}
+{%   if route.backend_url is defined %}
+    {{ route.name }}-router:
+      rule: "Host(`{{ route.hostname }}`)"
+      service: {{ route.name }}-service
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: {{ pangolin_letsencrypt_resolver_name }}
+{%   elif route.redirect_to is defined %}
+    {{ route.name }}-router:
+      rule: "Host(`{{ route.hostname }}`)"
+      service: noop-service
+      entryPoints:
+        - websecure
+      middlewares:
+        - {{ route.name }}-redirect
+      tls:
+        certResolver: {{ pangolin_letsencrypt_resolver_name }}
+{%   endif %}
+{% endfor %}
+
+  services:
+{% for route in pangolin_routes %}
+{%   if route.backend_url is defined %}
+    {{ route.name }}-service:
+      loadBalancer:
+        servers:
+          - url: "{{ route.backend_url }}"
+{%   endif %}
+{% endfor %}
+    # Service sentinelle pour les routeurs purement redirect (jamais joint).
+    noop-service:
+      loadBalancer:
+        servers:
+          - url: "http://127.0.0.1:1"
+
+  middlewares:
+{% for route in pangolin_routes %}
+{%   if route.redirect_to is defined %}
+    {{ route.name }}-redirect:
+      redirectRegex:
+        regex: "^https?://[^/]+/(.*)"
+        replacement: "{{ route.redirect_to }}/$1"
+        permanent: {{ route.permanent | default(true) | string | lower }}
+{%   endif %}
+{% endfor %}

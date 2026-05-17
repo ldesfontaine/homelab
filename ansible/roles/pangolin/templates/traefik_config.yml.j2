@@ -1,0 +1,79 @@
+# {{ ansible_managed }} — DO NOT EDIT MANUALLY
+#
+# Config statique Traefik. Différences avec l'upstream Pangolin :
+#   * cert resolver = cloudflare (DNS-01) au lieu de letsencrypt (HTTP-01)
+#   * api.insecure = false (l'API admin n'est pas exposée publiquement)
+#   * tout le reste (badger plugin, providers HTTP+file, ping) est conservé
+#     car nécessaire au fonctionnement de Pangolin.
+
+api:
+  insecure: false
+  dashboard: true
+
+providers:
+  http:
+    # Pangolin sert dynamiquement sa propre config Traefik via cette URL.
+    endpoint: "http://pangolin:3001/api/v1/traefik-config"
+    pollInterval: "5s"
+  file:
+    # Routes statiques que nous (Ansible) ajoutons par-dessus celles de Pangolin :
+    # portfolio backend + redirection apex (cf. templates/dynamic_config.yml.j2).
+    filename: "/etc/traefik/dynamic_config.yml"
+    watch: true
+
+experimental:
+  plugins:
+    badger:
+      moduleName: "github.com/fosrl/badger"
+      version: "v1.3.1"
+
+log:
+  level: "INFO"
+  format: "common"
+  maxSize: 100
+  maxBackups: 3
+  maxAge: 3
+  compress: true
+
+accessLog:
+  filePath: "/var/log/traefik/access.log"
+  bufferingSize: 100
+
+certificatesResolvers:
+  {{ pangolin_letsencrypt_resolver_name }}:
+    acme:
+      email: "{{ pangolin_letsencrypt_email }}"
+      storage: "/letsencrypt/acme.json"
+      caServer: "{{ pangolin_letsencrypt_ca_server }}"
+      dnsChallenge:
+        provider: cloudflare
+        resolvers:
+          - "1.1.1.1:53"
+          - "1.0.0.1:53"
+
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true
+  websecure:
+    address: ":443"
+    transport:
+      respondingTimeouts:
+        readTimeout: "30m"
+    http:
+      tls:
+        certResolver: "{{ pangolin_letsencrypt_resolver_name }}"
+      encodedCharacters:
+        allowEncodedSlash: true
+        allowEncodedQuestionMark: true
+
+serversTransport:
+  insecureSkipVerify: true
+
+ping:
+  entryPoint: "web"

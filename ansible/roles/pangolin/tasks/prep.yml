@@ -1,0 +1,37 @@
+---
+# ---------------------------------------------------------------------------
+# Préparation : arborescence /opt/pangolin/{config,config/traefik,...}
+# + création du réseau Docker partagé `pangolin-net`.
+# ---------------------------------------------------------------------------
+
+- name: Ensure pangolin compose directory tree exists
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  loop:
+    - "{{ pangolin_compose_dir }}"
+    - "{{ _pangolin_config_dir }}"
+    - "{{ _pangolin_traefik_config_dir }}"
+    - "{{ _pangolin_traefik_logs_dir }}"
+    - "{{ _pangolin_letsencrypt_dir }}"
+
+# /letsencrypt/acme.json doit être 0600 pour que Traefik consente à l'écrire.
+# Création préalable (touch) : `community.docker.docker_compose_v2` ne crée
+# pas le fichier — Traefik le génère au premier challenge.
+- name: Ensure ACME storage file exists with 0600 perms
+  ansible.builtin.copy:
+    content: "{}\n"
+    dest: "{{ _pangolin_letsencrypt_dir }}/acme.json"
+    owner: root
+    group: root
+    mode: '0600'
+    force: false   # n'écrase pas un acme.json existant (préserve les certs)
+
+- name: Create shared Docker network ({{ pangolin_docker_network }})
+  community.docker.docker_network:
+    name: "{{ pangolin_docker_network }}"
+    state: present
+    driver: bridge

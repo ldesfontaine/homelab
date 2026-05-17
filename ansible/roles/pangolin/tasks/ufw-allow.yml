@@ -1,0 +1,44 @@
+---
+# ---------------------------------------------------------------------------
+# Autoriser le trafic entrant 80/443 vers Traefik.
+# ---------------------------------------------------------------------------
+# Pourquoi `route: true` (ufw route allow) et NON `ufw allow` :
+#
+# Le trafic vers un port publié par Docker traverse la chaîne FORWARD du
+# kernel (pas INPUT), via `DOCKER-USER -j ufw-user-forward` (cf. rôle
+# `ufw_docker` qui implémente l'intégration chaifeng/ufw-docker en bloc
+# default-deny dans /etc/ufw/after.rules — ADR-002 couche 2).
+#
+# `ufw allow 80/tcp` ajoute une règle dans `ufw-user-input` (chaîne INPUT) :
+# inopérante pour les containers Docker. C'est l'erreur classique signalée
+# dans CLAUDE.md (« JAMAIS suggérer ufw allow <port> pour exposer un
+# container »).
+#
+# `ufw route allow proto tcp to any port 80` ajoute une règle dans
+# `ufw-user-forward` : elle est évaluée AVANT le default-deny posé par
+# le rôle ufw_docker, et le paquet est autorisé. Équivalent fonctionnel
+# du `ufw-docker allow <container> <port>` (script chaifeng) qu'on
+# n'installe pas chez nous (cf. commentaire d'en-tête du rôle ufw_docker).
+# ---------------------------------------------------------------------------
+
+- name: Allow forwarded HTTP (80/tcp) to Docker-published ports
+  community.general.ufw:
+    rule: allow
+    route: true
+    proto: tcp
+    port: "{{ pangolin_port_http }}"
+    comment: "Pangolin/Traefik HTTP (forwarded via DOCKER-USER)"
+
+- name: Allow forwarded HTTPS (443/tcp) to Docker-published ports
+  community.general.ufw:
+    rule: allow
+    route: true
+    proto: tcp
+    port: "{{ pangolin_port_https }}"
+    comment: "Pangolin/Traefik HTTPS (forwarded via DOCKER-USER)"
+
+# Note : les ports UDP WG de Gerbil ({{ pangolin_port_wg_data }},
+# {{ pangolin_port_wg_control }}) sont publiés par le compose mais restent
+# BLOQUÉS par défaut (default-deny ufw-docker). À ouvrir explicitement
+# avec deux règles `ufw route allow proto udp port ...` quand l'agent
+# Newt côté homelab sera déployé (futur).

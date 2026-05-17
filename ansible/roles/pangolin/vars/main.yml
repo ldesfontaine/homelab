@@ -1,0 +1,21 @@
+---
+# ===========================================================================
+# Constantes internes au rôle `pangolin`
+# ===========================================================================
+# Préfixées par `_` selon la convention ADR-000 Décision 2.
+# ===========================================================================
+
+_pangolin_compose_file: "{{ pangolin_compose_dir }}/docker-compose.yml"
+_pangolin_env_file: "{{ pangolin_compose_dir }}/.env"
+
+# Sous-arbre config (bind-mount dans pangolin, gerbil, traefik) — aligné avec
+# le compose upstream qui monte `./config/` directement dans les containers.
+_pangolin_config_dir: "{{ pangolin_compose_dir }}/config"
+_pangolin_traefik_config_dir: "{{ _pangolin_config_dir }}/traefik"
+_pangolin_traefik_logs_dir: "{{ _pangolin_config_dir }}/traefik/logs"
+_pangolin_letsencrypt_dir: "{{ _pangolin_config_dir }}/letsencrypt"
+
+# Noms de container — fixes (référencés par network_mode et healthchecks).
+_pangolin_container_name: pangolin
+_pangolin_gerbil_container_name: gerbil
+_pangolin_traefik_container_name: traefik
