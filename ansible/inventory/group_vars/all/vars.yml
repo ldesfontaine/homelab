@@ -55,6 +55,16 @@ ansible_ssh_private_key_file: ~/.ssh/id_ed25519_homelab
 cloudflare_api_token: "{{ vault_cloudflare_api_token }}"
 
 # ──────────────────────────────────────────────────────────────────────────
+# Email de contact admin — SOURCE UNIQUE DE VÉRITÉ.
+# Tout service qui a besoin d'un contact opérationnel (Let's Encrypt pour
+# les alertes de renouvellement raté, futurs services type Authentik /
+# alerting / etc.) doit référencer `admin_contact_email`, jamais une
+# variable vault directement, jamais une chaîne hardcodée. La valeur
+# elle-même vit dans group_vars/all/vault.yml (chiffrée — repo public).
+# ──────────────────────────────────────────────────────────────────────────
+admin_contact_email: "{{ vault_admin_contact_email }}"
+
+# ──────────────────────────────────────────────────────────────────────────
 # Timezone et locale (configurées par le rôle `common`)
 # ──────────────────────────────────────────────────────────────────────────
 system_timezone: "Europe/Paris"

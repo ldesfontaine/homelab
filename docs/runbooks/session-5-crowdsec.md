@@ -35,13 +35,14 @@ openssl rand -hex 32
 
 Conserver la valeur pour l'ajouter au vault dans 1.2.
 
-### 1.2. Édition du vault VPS
+### 1.2. Édition des vaults
+
+Deux vaults à toucher : le vault VPS pour les secrets CrowdSec spécifiques au groupe, et le vault `all` pour l'email de contact admin (partagé entre tous les services qui auront besoin d'une corde de rappel par mail — pas seulement Let's Encrypt).
 
 ```bash
+# Secrets CrowdSec — propres au groupe vps
 ansible-vault edit ansible/inventory/group_vars/vps/vault.yml
 ```
-
-Ajouter les trois variables suivantes. La clé d'enrôlement Console reste vide tant qu'on ne s'enrôle pas (cf. §6). L'email Let's Encrypt sort du repo public dans la même passe — LE l'utilise comme dernier recours d'alerte en cas d'échec de renouvellement (~20j avant expiration), c'est la corde de rappel avant un black-out cert ; on veut une boîte que Lucas relève réellement, et pas en clair dans `vars.yml` (scraping spam garanti sur un repo public).
 
 ```yaml
 # Clé partagée bouncer Traefik ↔ agent CrowdSec.
@@ -52,15 +53,24 @@ vault_crowdsec_bouncer_key: "<sortie de openssl rand -hex 32>"
 # Laisser vide tant qu'on ne veut pas pousser l'agent dans la Console
 # (DISABLE_ONLINE_API sera positionné à `true` dans ce cas, pas de CTI).
 vault_crowdsec_enroll_key: ""
-
-# Email de contact ACME — Let's Encrypt s'en sert UNIQUEMENT pour alerter
-# en cas d'échec de renouvellement. Mettre une vraie boîte (Gmail perso, etc.)
-# — la valeur "lucas@ldesfontaine.com" précédente ne sert à rien sans MX
-# records derrière, donc un black-out cert ne serait pas notifié.
-vault_letsencrypt_email: "<ton-vrai-gmail@gmail.com>"
 ```
 
-> **Note** : `vault_letsencrypt_email` est désormais référencé dans `roles/pangolin/defaults/main.yml` (`pangolin_letsencrypt_email`). Le re-run du rôle pangolin **plantera tôt** avec `'vault_letsencrypt_email' is undefined` si la variable n'est pas posée — c'est volontaire (fail fast).
+```bash
+# Contact admin global — partagé entre tous les hôtes
+ansible-vault edit ansible/inventory/group_vars/all/vault.yml
+```
+
+```yaml
+# Email de contact admin — source unique de vérité, ré-exposée via
+# `admin_contact_email` (group_vars/all/vars.yml). Utilisé entre autres par
+# Let's Encrypt pour alerter en cas d'échec de renouvellement (~20j avant
+# expiration). Mettre une vraie boîte que Lucas relève (Gmail perso, etc.) —
+# l'ancienne valeur "lucas@ldesfontaine.com" n'avait pas de MX derrière donc
+# un black-out cert ne serait jamais notifié.
+vault_admin_contact_email: "<ton-vrai-gmail@gmail.com>"
+```
+
+> **Note** : `vault_admin_contact_email` est référencé via la chaîne `admin_contact_email` → `pangolin_letsencrypt_email`. Si la variable vault est absente, le rôle pangolin **plante tôt** au render avec `'vault_admin_contact_email' is undefined` — fail-fast volontaire, on n'expédie pas un cert avec un contact bidon.
 
 ### 1.3. Validation pré-vol
 

@@ -57,11 +57,12 @@ pangolin_server_secret: "{{ vault_pangolin_admin_password }}"
 # bascule DNS pour émettre les premiers certs.
 # ───────────────────────────────────────────────────────────────────────────
 # Email contact ACME. Let's Encrypt s'en sert UNIQUEMENT pour alerter en
-# cas d'échec de renouvellement (~20j avant expiration). C'est la dernière
-# corde de rappel avant un black-out cert — on veut donc une vraie boîte
-# que Lucas relève réellement, et on la garde hors du repo public (Gmail
-# en clair dans vars.yml = spam scraping garanti).
-pangolin_letsencrypt_email: "{{ vault_letsencrypt_email }}"
+# cas d'échec de renouvellement (~20j avant expiration). On chaîne sur
+# `admin_contact_email` (group_vars/all/vars.yml → vault_admin_contact_email)
+# pour partager la source unique de vérité avec les autres services qui
+# auront besoin d'un contact admin (Authentik, alerting, etc.).
+# Override possible au niveau inventory (cf. group_vars/vps/vars.yml).
+pangolin_letsencrypt_email: "{{ admin_contact_email }}"
 pangolin_cloudflare_api_token: "{{ vault_cloudflare_api_token }}"
 pangolin_letsencrypt_ca_server: "https://acme-v02.api.letsencrypt.org/directory"
 # Pour rejouer sans risque de rate-limit (rotations cert) :

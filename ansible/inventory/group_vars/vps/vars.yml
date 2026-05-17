@@ -9,6 +9,15 @@ ssh_target_port: 2203
 portfolio_image_tag: "0.0.4"
 
 # ───────────────────────────────────────────────────────────────────────────
+# Pangolin / Let's Encrypt — l'email de contact ACME est ré-exposé ici comme
+# alias de `admin_contact_email` (group_vars/all/vars.yml) pour qu'on voie
+# explicitement, au niveau inventory du VPS, quelle adresse Let's Encrypt
+# notifiera en cas d'échec de renouvellement. Ne PAS dupliquer la valeur :
+# on chaîne sur la source unique de vérité.
+# ───────────────────────────────────────────────────────────────────────────
+pangolin_letsencrypt_email: "{{ admin_contact_email }}"
+
+# ───────────────────────────────────────────────────────────────────────────
 # CrowdSec (session 5) — pins centralisés au niveau inventory pour visibilité
 # et corrélation entre l'image de l'agent et la version du plugin Traefik.
 # Vérifier avant bump :
