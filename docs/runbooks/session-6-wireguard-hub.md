@@ -368,7 +368,7 @@ curl -sI http://10.99.10.1:3001
 # Attendu : code HTTP 200 ou 30x (l'IP 10.99.10.1 = adresse du hub vue de l'intérieur du tunnel).
 ```
 
-Important : le port `3001` n'est PAS exposé publiquement (cf. `docker ps` côté VPS → mapping `3001:3001` interne au container, pas publié sur l'host). C'est précisément l'objectif : le hub WG est le **seul chemin** vers ces interfaces.
+Important : le port `3001` n'est PAS exposé publiquement. Le compose Pangolin binde explicitement `10.99.10.1:3001:3001` (IP du hub WG, pas `0.0.0.0`) — vérifiable côté VPS avec `sudo ss -tlnp | grep 3001` qui doit afficher `10.99.10.1:3001` et **pas** `0.0.0.0:3001` ni `*:3001`. Le tunnel WG reste donc le **seul chemin** vers le dashboard, et ADR-002 est respectée (l'IP `10.99.10.1` n'existe que pour les peers connectés au hub).
 
 ### 7.3. Bascule laptop ↔ phone
 
@@ -519,6 +519,36 @@ FAILED: file (/etc/wireguard/wg-admin.key) is absent, cannot continue
 Cause : la task précédente `Generate the WireGuard private key (only if absent)` utilise `creates:` — en check mode elle simule sans écrire le fichier, et toutes les tasks suivantes qui exigent la présence physique de `/etc/wireguard/wg-admin.key` plantent. Limitation Ansible connue (cf. §1.5 et ADR-000 "Limite acceptée — check mode partiel").
 
 Fix : au **premier** déploiement, ne pas lancer `--check`. Lancer directement le run réel de la section 2. À partir du 2ème run, la privkey existe sur disque et `--check` passe proprement.
+
+### 10.8. Dashboard Pangolin non joignable après reboot du VPS
+
+Symptôme : après un reboot, `curl http://10.99.10.1:3001` depuis le laptop connecté au tunnel ne répond plus (timeout ou « connection refused »). `wg show wg-admin` côté VPS montre bien l'interface up et le handshake établi.
+
+Cause probable : `docker.service` a démarré **avant** `wg-quick@wg-admin.service` au boot. Le container Pangolin essaie de binder `10.99.10.1:3001` mais l'IP n'existe pas encore côté kernel (l'interface `wg-admin` n'est pas montée), Docker échoue silencieusement sur le port et le container se loop en restart. Vérifier :
+
+```bash
+ssh -p 2203 deploy@<ip-vps>
+sudo docker ps --format 'table {{.Names}}\t{{.Status}}' | grep pangolin
+# Pangolin probablement en `Restarting (X) ...`
+
+sudo docker logs pangolin --tail 20
+# Typiquement : `cannot assign requested address` ou `bind: cannot assign requested address`
+
+ip -4 addr show wg-admin
+# Doit montrer inet 10.99.10.1/24. Si absent → wg-quick n'est pas up.
+```
+
+Fix immédiat (l'interface WG est maintenant montée, on demande à Docker de re-tenter le binding) :
+
+```bash
+# Option ciblée — recrée juste pangolin via compose (donc avec les vars du .env)
+sudo docker compose -f /opt/pangolin/docker-compose.yml restart pangolin
+
+# Option large — restart de tout Docker (tous les containers reload)
+sudo systemctl restart docker
+```
+
+Fix durable (optionnel) : ajouter une dépendance d'ordering systemd `docker.service` → `wg-quick@wg-admin.service` (`Requires=` + `After=`) via un drop-in `/etc/systemd/system/docker.service.d/wait-wg-admin.conf`. Non automatisé pour l'instant — à câbler dans une session ultérieure si le problème devient récurrent (à priori, un reboot manuel est rare).
 
 ---
 
