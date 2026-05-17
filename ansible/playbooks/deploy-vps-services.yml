@@ -18,7 +18,11 @@
 #                          pangolin-net (internal-only). Doit tourner AVANT
 #                          que le portfolio ne reçoive du trafic — le plugin
 #                          Traefik appelle l'agent sur crowdsec:8080.
-#   6. portfolio         — rejoint pangolin-net (internal-only), Traefik
+#   6. wireguard_hub     — hub WG admin natif (systemd wg-quick@), hors Docker.
+#                          Indépendant des rôles Docker : ouvre 51821/udp en
+#                          UFW INPUT classique (cf. ADR-002). Place stable
+#                          entre crowdsec et portfolio pour un diff prévisible.
+#   7. portfolio         — rejoint pangolin-net (internal-only), Traefik
 #                          le résout via DNS Docker comme backend HTTP
 #
 # Important : pangolin DOIT être joué AVANT portfolio. Le rôle pangolin
@@ -62,6 +66,10 @@
     - role: crowdsec
       tags:
         - crowdsec
+    - role: wireguard_hub
+      tags:
+        - wireguard_hub
+        - wireguard
     - role: portfolio
       tags:
         - portfolio
