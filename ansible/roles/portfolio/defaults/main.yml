@@ -20,10 +20,12 @@ portfolio_goatcounter_vhost: "{{ homelab_fqdn_portfolio }}"
 portfolio_payload_secret: "{{ vault_portfolio_payload_secret }}"
 portfolio_container_port: 3000
 
-# Session 3 : binding 127.0.0.1 uniquement (testable via SSH tunnel local).
-# Session 4 (Pangolin) : on bascule à false, le container devient
-# internal-only et joignable via le réseau Docker partagé avec Pangolin.
-portfolio_bind_localhost: true
+# Session 3 : binding 127.0.0.1 (testable via SSH tunnel local).
+# Session 4 (Pangolin) : false par défaut — le container devient
+# internal-only et joignable via {{ portfolio_docker_networks }} (en
+# particulier `pangolin-net`, partagé avec Traefik). Override possible
+# (`-e portfolio_bind_localhost=true`) pour rollback ou debug local.
+portfolio_bind_localhost: false
 
 # ───────────────────────────────────────────────────────────────────────────
 # Stockage (cf. README portfolio)
@@ -33,11 +35,17 @@ portfolio_data_volume: portfolio-data
 portfolio_media_volume: portfolio-media
 
 # ───────────────────────────────────────────────────────────────────────────
-# Réseau Docker
+# Réseaux Docker — le container est attaché à plusieurs réseaux :
+#   * portfolio-net : réseau dédié, isolé (futurs sidecars/agents périphériques)
+#   * pangolin-net  : partagé avec Pangolin/Traefik, qui résout `portfolio`
+#                     via le DNS Docker interne (cf. dynamic_config.yml du
+#                     rôle pangolin → backend `http://portfolio:3000`)
+# Le rôle `pangolin` est responsable de la création de pangolin-net (prep.yml),
+# le rôle `portfolio` ne fait que le référencer en `external: true` ici.
 # ───────────────────────────────────────────────────────────────────────────
-# Session 3 : réseau dédié. Session 4 : on joindra `pangolin-net` en plus
-# pour que Pangolin puisse résoudre le container via DNS Docker interne.
-portfolio_docker_network: portfolio-net
+portfolio_docker_networks:
+  - portfolio-net
+  - pangolin-net
 
 # ───────────────────────────────────────────────────────────────────────────
 # Backups : NON gérés ici.

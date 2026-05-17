@@ -1,6 +1,13 @@
 ---
 # ---------------------------------------------------------------------------
-# Préparation : répertoire compose + réseau Docker dédié
+# Préparation : répertoire compose + réseau Docker DÉDIÉ portfolio.
+# ---------------------------------------------------------------------------
+# Note : on ne crée ici QUE le réseau "portfolio-net" (interne au rôle).
+# Les autres réseaux référencés par {{ portfolio_docker_networks }} — en
+# particulier `pangolin-net` depuis la session 4 — sont créés par leur rôle
+# propriétaire (cf. roles/pangolin/tasks/prep.yml) et déclarés `external: true`
+# dans le compose. C'est l'ADR-000 décision 2 : pas de dépendance inter-rôles,
+# l'ordre est piloté par le playbook (pangolin AVANT portfolio).
 # ---------------------------------------------------------------------------
 
 - name: Ensure portfolio compose directory exists
@@ -11,7 +18,8 @@
     group: root
     mode: '0755'
 
-- name: Create dedicated Docker network for portfolio
+- name: Create dedicated Docker network for portfolio (portfolio-net)
   community.docker.docker_network:
-    name: "{{ portfolio_docker_network }}"
+    name: portfolio-net
     state: present
+    driver: bridge

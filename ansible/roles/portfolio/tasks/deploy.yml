@@ -33,14 +33,28 @@
     state: present
     pull: missing
 
-- name: Wait for portfolio HTTP availability (only when bound on localhost)
+- name: Wait for portfolio HTTP availability via host loopback (debug / rollback mode)
   ansible.builtin.uri:
     url: "http://127.0.0.1:{{ portfolio_container_port }}/"
     status_code: [200, 301, 302]
     timeout: 10
-  register: _portfolio_health
+  register: _portfolio_health_host
   retries: 12
   delay: 5
-  until: _portfolio_health.status in [200, 301, 302]
+  until: _portfolio_health_host.status in [200, 301, 302]
   when: portfolio_bind_localhost | bool
+  changed_when: false
+
+# Conf nominale session 4 : aucun port host n'est mappé, on teste via
+# `docker exec` dans le container — l'image contient `wget` (BusyBox).
+- name: Wait for portfolio HTTP availability via docker exec (internal-only mode)
+  community.docker.docker_container_exec:
+    container: "{{ _portfolio_container_name }}"
+    command: wget -qO- -t 1 -T 5 http://127.0.0.1:{{ portfolio_container_port }}/
+    chdir: /
+  register: _portfolio_health_internal
+  retries: 12
+  delay: 5
+  until: _portfolio_health_internal.rc == 0
+  when: not (portfolio_bind_localhost | bool)
   changed_when: false

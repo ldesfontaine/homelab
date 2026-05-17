@@ -1,10 +1,11 @@
 # {{ ansible_managed }}
 #
-# Portfolio — déploiement session 3
+# Portfolio — déploiement session 3, modifié session 4 (Pangolin).
 # - Image pull depuis GHCR (ADR-000 Décision 6, pas de build sur le VPS)
-# - Binding 127.0.0.1 uniquement en session 3 (test via SSH tunnel)
-# - En session 4 (Pangolin) : portfolio_bind_localhost=false, container
-#   devient internal-only et joint le réseau Docker partagé avec Pangolin
+# - Session 3 : binding 127.0.0.1 (testable via SSH tunnel).
+# - Session 4 : portfolio_bind_localhost=false par défaut → AUCUN port host
+#   publié, le container est joignable uniquement via le réseau Docker
+#   partagé `pangolin-net` (Traefik résout `portfolio:3000` via DNS Docker).
 
 services:
   portfolio:
@@ -28,15 +29,17 @@ services:
       GOATCOUNTER_VHOST: {{ portfolio_goatcounter_vhost }}
 {% if portfolio_bind_localhost %}
     ports:
-      # Binding 127.0.0.1 — non exposé sur internet (cf. ADR-002).
-      # Bascule à false en session 4, le port disparaît.
+      # Override de debug / rollback : binding 127.0.0.1 — non exposé sur
+      # internet (cf. ADR-002). En conf nominale session 4 ce bloc DISPARAÎT.
       - "127.0.0.1:{{ portfolio_container_port }}:{{ portfolio_container_port }}"
 {% endif %}
     volumes:
       - {{ portfolio_data_volume }}:/data
       - {{ portfolio_media_volume }}:/app/media
     networks:
-      - {{ portfolio_docker_network }}
+{% for net in portfolio_docker_networks %}
+      - {{ net }}
+{% endfor %}
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:{{ portfolio_container_port }}/"]
       interval: 30s
@@ -49,5 +52,7 @@ volumes:
   {{ portfolio_media_volume }}:
 
 networks:
-  {{ portfolio_docker_network }}:
+{% for net in portfolio_docker_networks %}
+  {{ net }}:
     external: true
+{% endfor %}
