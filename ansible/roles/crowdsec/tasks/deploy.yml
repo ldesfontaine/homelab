@@ -27,7 +27,7 @@
 - name: Wait for CrowdSec LAPI to be ready (cscli lapi status)
   community.docker.docker_container_exec:
     container: "{{ _crowdsec_container_name }}"
-    command: ["cscli", "lapi", "status"]
+    argv: ["cscli", "lapi", "status"]
   register: _crowdsec_lapi_status
   retries: 30
   delay: 2

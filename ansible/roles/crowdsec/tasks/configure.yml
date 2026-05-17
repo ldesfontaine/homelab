@@ -33,7 +33,7 @@
 - name: List existing CrowdSec bouncers
   community.docker.docker_container_exec:
     container: "{{ _crowdsec_container_name }}"
-    command: ["cscli", "bouncers", "list", "-o", "json"]
+    argv: ["cscli", "bouncers", "list", "-o", "json"]
   register: _crowdsec_bouncers_raw
   changed_when: false
 
@@ -46,7 +46,7 @@
 - name: Register Traefik bouncer with predefined key
   community.docker.docker_container_exec:
     container: "{{ _crowdsec_container_name }}"
-    command:
+    argv:
       - cscli
       - bouncers
       - add
@@ -63,7 +63,7 @@
 - name: Enroll agent in CrowdSec Console (optional)
   community.docker.docker_container_exec:
     container: "{{ _crowdsec_container_name }}"
-    command:
+    argv:
       - cscli
       - console
       - enroll
