@@ -14,12 +14,18 @@
 #   3. ufw_docker        — couche 2 firewall (DOCKER-USER default-deny)
 #   4. pangolin          — reverse proxy public (Traefik + Gerbil) + crée
 #                          le réseau Docker partagé `pangolin-net`
-#   5. portfolio         — rejoint pangolin-net (internal-only), Traefik
+#   5. crowdsec          — agent LAPI + parsers Traefik/sshd, rejoint
+#                          pangolin-net (internal-only). Doit tourner AVANT
+#                          que le portfolio ne reçoive du trafic — le plugin
+#                          Traefik appelle l'agent sur crowdsec:8080.
+#   6. portfolio         — rejoint pangolin-net (internal-only), Traefik
 #                          le résout via DNS Docker comme backend HTTP
 #
 # Important : pangolin DOIT être joué AVANT portfolio. Le rôle pangolin
-# (prep.yml) crée le réseau `pangolin-net` que le compose portfolio
-# référence ensuite en `external: true`.
+# (prep.yml) crée le réseau `pangolin-net` que les compose crowdsec/portfolio
+# référencent ensuite en `external: true`. crowdsec est intercalé entre les
+# deux pour que les logs Traefik (passés en JSON dans pangolin) soient ingérés
+# avant que le portfolio ne devienne joignable derrière le middleware bouncer.
 # ===========================================================================
 
 - name: Detect SSH state
@@ -53,6 +59,9 @@
     - role: pangolin
       tags:
         - pangolin
+    - role: crowdsec
+      tags:
+        - crowdsec
     - role: portfolio
       tags:
         - portfolio
