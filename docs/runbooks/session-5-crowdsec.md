@@ -41,7 +41,7 @@ Conserver la valeur pour l'ajouter au vault dans 1.2.
 ansible-vault edit ansible/inventory/group_vars/vps/vault.yml
 ```
 
-Ajouter les deux variables suivantes (la clé d'enrôlement Console reste vide tant qu'on ne s'enrôle pas — cf. §6) :
+Ajouter les trois variables suivantes. La clé d'enrôlement Console reste vide tant qu'on ne s'enrôle pas (cf. §6). L'email Let's Encrypt sort du repo public dans la même passe — LE l'utilise comme dernier recours d'alerte en cas d'échec de renouvellement (~20j avant expiration), c'est la corde de rappel avant un black-out cert ; on veut une boîte que Lucas relève réellement, et pas en clair dans `vars.yml` (scraping spam garanti sur un repo public).
 
 ```yaml
 # Clé partagée bouncer Traefik ↔ agent CrowdSec.
@@ -52,7 +52,15 @@ vault_crowdsec_bouncer_key: "<sortie de openssl rand -hex 32>"
 # Laisser vide tant qu'on ne veut pas pousser l'agent dans la Console
 # (DISABLE_ONLINE_API sera positionné à `true` dans ce cas, pas de CTI).
 vault_crowdsec_enroll_key: ""
+
+# Email de contact ACME — Let's Encrypt s'en sert UNIQUEMENT pour alerter
+# en cas d'échec de renouvellement. Mettre une vraie boîte (Gmail perso, etc.)
+# — la valeur "lucas@ldesfontaine.com" précédente ne sert à rien sans MX
+# records derrière, donc un black-out cert ne serait pas notifié.
+vault_letsencrypt_email: "<ton-vrai-gmail@gmail.com>"
 ```
+
+> **Note** : `vault_letsencrypt_email` est désormais référencé dans `roles/pangolin/defaults/main.yml` (`pangolin_letsencrypt_email`). Le re-run du rôle pangolin **plantera tôt** avec `'vault_letsencrypt_email' is undefined` si la variable n'est pas posée — c'est volontaire (fail fast).
 
 ### 1.3. Validation pré-vol
 
@@ -354,7 +362,14 @@ docker exec crowdsec cscli decisions delete --all
 
 ### 8.1. Désactiver le bouncer sans toucher à l'agent
 
-Éditer `roles/pangolin/defaults/main.yml`, mettre `pangolin_default_middlewares: []`, rejouer `--tags pangolin --diff`. Traefik recharge le file provider, plus aucun router n'a le middleware. CrowdSec continue de tourner et d'ingérer les logs (utile pour observer sans bloquer).
+Surcharger `pangolin_crowdsec_integration_enabled: false` (extra-vars CLI ou édition `roles/pangolin/defaults/main.yml`), rejouer `--tags pangolin --diff`. La conf statique Traefik perd la déclaration du plugin (handler `Restarting traefik` déclenché), la conf dynamique ne définit plus le middleware ni son attachement aux routers backend. CrowdSec continue de tourner et d'ingérer les logs — utile pour observer sans bloquer, ou pour debug Pangolin/Traefik isolément.
+
+```bash
+ansible-playbook -i inventory/00-static.yml playbooks/deploy-vps-services.yml \
+  --tags pangolin -e pangolin_crowdsec_integration_enabled=false --diff
+```
+
+Pour réactiver : retirer l'extra-var (ou repasser à `true`) et rejouer.
 
 ### 8.2. Retirer complètement CrowdSec
 

@@ -5,10 +5,16 @@
 # (pangolin:3001/api/v1/traefik-config) — pas de conflit tant qu'aucun
 # hostname n'est dupliqué.
 #
-# Session 5 : tous les routers `backend_url` reçoivent les middlewares listés
-# dans `pangolin_default_middlewares` (par défaut : crowdsec-bouncer). Les
-# routers `redirect_to` (apex) NE sont PAS protégés — ce ne sont que des 308
-# vers le router cible qui, lui, sera filtré.
+# Middlewares attachés aux routers backend (clé `backend_url`) :
+#   - les entrées de `pangolin_default_middlewares` (vide par défaut, levier
+#     pour des middlewares génériques sans flag dédié)
+#   - + `crowdsec-bouncer` si `pangolin_crowdsec_integration_enabled` est vrai
+# Les routers `redirect_to` (apex) ne reçoivent que leur middleware redirect ;
+# le filtrage CrowdSec a lieu sur le router cible (308 → backend filtré).
+
+{% set _crowdsec_enabled = pangolin_crowdsec_integration_enabled | default(true) %}
+{% set _backend_middlewares = (pangolin_default_middlewares | default([]))
+                              + (['crowdsec-bouncer'] if _crowdsec_enabled else []) %}
 
 http:
   routers:
@@ -19,10 +25,9 @@ http:
       service: {{ route.name }}-service
       entryPoints:
         - websecure
-{%     set _route_middlewares = pangolin_default_middlewares | default([]) %}
-{%     if _route_middlewares | length > 0 %}
+{%     if _backend_middlewares | length > 0 %}
       middlewares:
-{%       for mw in _route_middlewares %}
+{%       for mw in _backend_middlewares %}
         - {{ mw }}
 {%       endfor %}
 {%     endif %}
@@ -66,6 +71,7 @@ http:
         permanent: {{ route.permanent | default(true) | string | lower }}
 {%   endif %}
 {% endfor %}
+{% if _crowdsec_enabled %}
     # Bouncer CrowdSec — délègue à l'agent (crowdsec:8080 sur pangolin-net)
     # la décision de bloquer une IP. Mode `stream` : le plugin maintient un
     # cache local synchronisé périodiquement, donc pas d'appel LAPI par
@@ -95,3 +101,4 @@ http:
           clientTrustedIPs:
             - "127.0.0.1/32"
             - "172.16.0.0/12"
+{% endif %}

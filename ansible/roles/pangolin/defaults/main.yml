@@ -56,7 +56,12 @@ pangolin_server_secret: "{{ vault_pangolin_admin_password }}"
 # (b) résilient à une indispo temporaire du port 80, (c) ne dépend pas de la
 # bascule DNS pour émettre les premiers certs.
 # ───────────────────────────────────────────────────────────────────────────
-pangolin_letsencrypt_email: "lucas@{{ homelab_domain }}"
+# Email contact ACME. Let's Encrypt s'en sert UNIQUEMENT pour alerter en
+# cas d'échec de renouvellement (~20j avant expiration). C'est la dernière
+# corde de rappel avant un black-out cert — on veut donc une vraie boîte
+# que Lucas relève réellement, et on la garde hors du repo public (Gmail
+# en clair dans vars.yml = spam scraping garanti).
+pangolin_letsencrypt_email: "{{ vault_letsencrypt_email }}"
 pangolin_cloudflare_api_token: "{{ vault_cloudflare_api_token }}"
 pangolin_letsencrypt_ca_server: "https://acme-v02.api.letsencrypt.org/directory"
 # Pour rejouer sans risque de rate-limit (rotations cert) :
@@ -117,7 +122,17 @@ pangolin_portfolio_backend_port: 3000
 # Middlewares Traefik appliqués à tous les routers backend (clé `backend_url`)
 # définis dans pangolin_routes. NE PAS appliquer aux routers redirect : ils
 # pointent vers noop-service et leur seul rôle est le 308 vers le router cible.
-# Session 5 : le bouncer CrowdSec est défini dans dynamic_config.yml.j2 et
-# alimenté par le rôle `crowdsec` (LAPI joignable via DNS Docker).
-pangolin_default_middlewares:
-  - crowdsec-bouncer
+# Vide par défaut — utiliser ce levier pour des middlewares génériques qui ne
+# justifient pas leur propre feature flag (ex : rate-limit, headers de sécu).
+# L'intégration CrowdSec a son flag dédié `pangolin_crowdsec_integration_enabled`.
+pangolin_default_middlewares: []
+
+# Feature flag intégration CrowdSec (session 5). Quand `true` :
+#   - le plugin `crowdsec-bouncer` est défini dans la conf statique Traefik
+#   - le middleware éponyme est défini dans le dynamic_config (file provider)
+#   - et attaché à tous les routers backend (clé `backend_url`)
+# Quand `false` : aucun appel LAPI, aucune référence au plugin → Pangolin
+# peut tourner sans que le rôle `crowdsec` ait été déployé (debug,
+# investigation, etc.). Convention IaC : chaque greffon optionnel (auth
+# Authentik, OIDC, etc.) recevra son flag équivalent.
+pangolin_crowdsec_integration_enabled: true
