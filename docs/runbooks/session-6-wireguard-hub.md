@@ -94,10 +94,25 @@ ansible-playbook playbooks/deploy-vps-services.yml --syntax-check
 ansible-lint roles/wg_admin_hub
 yamllint -c ../.yamllint roles/wg_admin_hub playbooks/deploy-vps-services.yml
 
-# Dry-run (le rôle est entièrement compatible --check)
+# Dry-run — UNIQUEMENT après le premier run réel (voir note ci-dessous)
 ansible-playbook -i inventory/00-static.yml playbooks/deploy-vps-services.yml \
   --check --diff --tags wg_admin_hub
 ```
+
+> **Limitation `--check` au premier déploiement** : la chaîne `generate
+> privkey → enforce perms → slurp → derive pubkey → render conf` du rôle
+> dépend de la présence réelle de `/etc/wireguard/wg-admin.key` sur disque.
+> En check mode, la task `Generate the WireGuard private key (only if
+> absent)` simule sans écrire, donc la task suivante `Enforce 0600 perms on
+> the WireGuard private key` plante avec `file (/etc/wireguard/wg-admin.key)
+> is absent, cannot continue`. C'est la même limitation Ansible que pour
+> le rôle `bootstrap` (cf. ADR-000, section "Limite acceptée — check mode
+> partiel").
+>
+> **Au premier déploiement** : skip la commande `--check` ci-dessus et
+> lance directement le run effectif (section 2). Une fois la privkey
+> créée sur disque, `--check` passe proprement à tous les runs suivants
+> et reste utile pour valider l'idempotence avant un run réel.
 
 ---
 
@@ -489,6 +504,21 @@ Symptômes :
   xdg-open /tmp/phone-qr.png
   # Penser à `shred -u /tmp/phone-qr.png` après import sur le phone.
   ```
+
+### 10.7. FAIL au `--check` sur `Enforce 0600 perms` / `Read the WireGuard private key`
+
+Symptôme : le pré-vol en `--check` plante sur l'une des tasks :
+
+```
+TASK [wg_admin_hub : Enforce 0600 perms on the WireGuard private key]
+FAILED: file (/etc/wireguard/wg-admin.key) is absent, cannot continue
+```
+
+(ou bien plus loin, sur `Read the WireGuard private key` avec un slurp qui échoue.)
+
+Cause : la task précédente `Generate the WireGuard private key (only if absent)` utilise `creates:` — en check mode elle simule sans écrire le fichier, et toutes les tasks suivantes qui exigent la présence physique de `/etc/wireguard/wg-admin.key` plantent. Limitation Ansible connue (cf. §1.5 et ADR-000 "Limite acceptée — check mode partiel").
+
+Fix : au **premier** déploiement, ne pas lancer `--check`. Lancer directement le run réel de la section 2. À partir du 2ème run, la privkey existe sur disque et `--check` passe proprement.
 
 ---
 
