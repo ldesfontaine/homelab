@@ -406,6 +406,28 @@ sudo docker compose -f /opt/pangolin/docker-compose.yml restart traefik
 
 Alternative ponctuelle : `sudo docker restart traefik` court-circuite compose (et donc le `.env`) — le container existant est juste redémarré avec sa conf embarquée. Suffisant pour un simple reload après modification du template statique ; insuffisant si on a changé des variables d'env dans le compose (il faut alors `up -d` pour recréer le container avec le nouvel environnement).
 
+### 7.8. Fail sur `Enroll agent in CrowdSec Console (optional)` aux runs suivants
+
+Symptôme : le premier run du playbook (juste après avoir posé `vault_crowdsec_enroll_key`) passe sans souci. Les runs suivants plantent sur :
+
+```
+TASK [crowdsec : Enroll agent in CrowdSec Console (optional)]
+fatal: ... {"censored": "the output has been hidden due to the fact
+that 'no_log: true' was specified for this result", "changed": false}
+```
+
+Cause : `cscli console enroll <key>` n'est pas idempotent — il retourne un exit code non-zéro quand le `machine_id` est déjà associé à un compte sur `app.crowdsec.net`. Le `no_log: true` (nécessaire pour ne pas leaker la clé) masque le détail.
+
+Fix : déjà corrigé dans le rôle. La task `Check current CrowdSec Console enrollment status` lit `cscli console status -o json` en amont — si l'un des flags de partage (`context`, `custom`, `manual`, `tainted`) est `true`, l'agent est considéré enrôlé et la task `enroll` est skip via `when:`. À l'enrôlement initial, `cscli` flippe ces quatre flags à `true` par défaut, ce qui les rend exploitables comme marqueur.
+
+Diagnostic manuel si jamais ça repart en vrille :
+
+```bash
+sudo docker exec crowdsec cscli console status -o json
+# Tous à false  → pas enrôlé (l'enroll doit tourner)
+# Au moins un true → déjà enrôlé (l'enroll doit être skip)
+```
+
 ---
 
 ## 8. Rollback

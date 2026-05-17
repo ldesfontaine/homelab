@@ -60,6 +60,32 @@
 # `vault_crowdsec_enroll_key` vide = pas d'enrôlement (agent isolé).
 # Une fois rempli + replay du playbook, l'agent rejoint app.crowdsec.net
 # et on peut activer les blocklists CTI côté dashboard.
+#
+# `cscli console enroll` n'est pas idempotent : succès au premier run, exit
+# code != 0 quand l'agent est déjà enrôlé. On lit le status JSON avant pour
+# skipper proprement aux runs suivants. À l'enrôlement, cscli active par
+# défaut les quatre flags de partage (context/custom/manual/tainted) — leur
+# état sert donc de marqueur "agent enrôlé".
+- name: Check current CrowdSec Console enrollment status
+  community.docker.docker_container_exec:
+    container: "{{ _crowdsec_container_name }}"
+    argv: ["cscli", "console", "status", "-o", "json"]
+  register: _crowdsec_console_status
+  changed_when: false
+  failed_when: false
+  when: crowdsec_enroll_key | length > 0
+
+- name: Compute CrowdSec Console enrollment marker
+  ansible.builtin.set_fact:
+    _crowdsec_console_enrolled: >-
+      {{ (_crowdsec_console_status.rc | default(1)) == 0
+         and ((_crowdsec_console_status.stdout | default('{}') | from_json)
+              | dict2items
+              | selectattr('key', 'in', ['context', 'custom', 'manual', 'tainted'])
+              | selectattr('value', 'equalto', true)
+              | list | length) > 0 }}
+  when: crowdsec_enroll_key | length > 0
+
 - name: Enroll agent in CrowdSec Console (optional)
   community.docker.docker_container_exec:
     container: "{{ _crowdsec_container_name }}"
@@ -80,5 +106,6 @@
     - "'already enrolled' not in (_crowdsec_enroll.stdout | default(''))"
   when:
     - crowdsec_enroll_key | length > 0
+    - not (_crowdsec_console_enrolled | default(false))
   no_log: true
   notify: Restarting crowdsec
