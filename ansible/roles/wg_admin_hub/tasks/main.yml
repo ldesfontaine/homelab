@@ -1,6 +1,6 @@
 ---
 # ===========================================================================
-# Rôle `wireguard_hub` — déploiement du hub WG admin natif (systemd wg-quick@)
+# Rôle `wg_admin_hub` — déploiement du hub WG admin natif (systemd wg-quick@)
 # ===========================================================================
 # Référence : docs/adr/ADR-000-fondations-ansible.md
 #             docs/adr/ADR-002-firewall-strategy.md (UDP 51821 ouvert en
@@ -26,7 +26,7 @@
 
 - name: Ensure /etc/wireguard exists with strict perms
   ansible.builtin.file:
-    path: "{{ _wg_admin_config_dir }}"
+    path: "{{ _wg_admin_hub_config_dir }}"
     state: directory
     owner: root
     group: root
@@ -36,13 +36,13 @@
 # existe déjà. Le `umask 077` garantit 0600 dès la création (avant même
 # que la task suivante ne force le mode).
 - name: Generate the WireGuard private key (only if absent)
-  ansible.builtin.shell: "umask 077 && wg genkey > {{ _wg_admin_private_key_path }}"
+  ansible.builtin.shell: "umask 077 && wg genkey > {{ _wg_admin_hub_private_key_path }}"
   args:
-    creates: "{{ _wg_admin_private_key_path }}"
+    creates: "{{ _wg_admin_hub_private_key_path }}"
 
 - name: Enforce 0600 perms on the WireGuard private key
   ansible.builtin.file:
-    path: "{{ _wg_admin_private_key_path }}"
+    path: "{{ _wg_admin_hub_private_key_path }}"
     state: file
     owner: root
     group: root
@@ -50,14 +50,14 @@
 
 - name: Read the WireGuard private key
   ansible.builtin.slurp:
-    src: "{{ _wg_admin_private_key_path }}"
-  register: _wg_admin_privkey_slurp
+    src: "{{ _wg_admin_hub_private_key_path }}"
+  register: _wg_admin_hub_privkey_slurp
   no_log: true
 
 # `trim` retire le `\n` ajouté par `wg genkey` à l'écriture du fichier.
 - name: Stash the private key as an in-memory fact
   ansible.builtin.set_fact:
-    _wg_admin_private_key: "{{ _wg_admin_privkey_slurp.content | b64decode | trim }}"
+    _wg_admin_hub_private_key: "{{ _wg_admin_hub_privkey_slurp.content | b64decode | trim }}"
   no_log: true
 
 # Read-only — exécuté aussi en --check pour que les tasks suivantes (debug,
@@ -66,24 +66,24 @@
 - name: Derive the WireGuard public key from the private key
   ansible.builtin.command:
     cmd: wg pubkey
-    stdin: "{{ _wg_admin_private_key }}"
+    stdin: "{{ _wg_admin_hub_private_key }}"
     stdin_add_newline: false
-  register: _wg_admin_pubkey_result
+  register: _wg_admin_hub_pubkey_result
   changed_when: false
   check_mode: false
   no_log: true
 
 - name: Stash the public key as a fact
   ansible.builtin.set_fact:
-    _wg_admin_public_key: "{{ _wg_admin_pubkey_result.stdout | trim }}"
+    _wg_admin_hub_public_key: "{{ _wg_admin_hub_pubkey_result.stdout | trim }}"
 
 # La pubkey est publique par définition (distribuée aux clients) — perms
 # normales `0644` et pas de no_log. Sert aussi de fallback hors-Ansible
 # (`sudo cat /etc/wireguard/wg-admin.pub` côté VPS).
 - name: Persist the WireGuard public key to disk
   ansible.builtin.copy:
-    content: "{{ _wg_admin_public_key }}\n"
-    dest: "{{ _wg_admin_public_key_path }}"
+    content: "{{ _wg_admin_hub_public_key }}\n"
+    dest: "{{ _wg_admin_hub_public_key_path }}"
     owner: root
     group: root
     mode: '0644'
@@ -91,7 +91,7 @@
 - name: Deploy the WireGuard hub configuration
   ansible.builtin.template:
     src: wg-admin.conf.j2
-    dest: "{{ _wg_admin_config_file }}"
+    dest: "{{ _wg_admin_hub_config_file }}"
     owner: root
     group: root
     mode: '0600'
@@ -111,7 +111,7 @@
       # PostUp also sets it at interface bring-up, but this file applies
       # at boot before any unit starts.
       net.ipv4.ip_forward = 1
-    dest: "{{ _wg_admin_sysctl_file }}"
+    dest: "{{ _wg_admin_hub_sysctl_file }}"
     owner: root
     group: root
     mode: '0644'
@@ -124,12 +124,12 @@
   community.general.ufw:
     rule: allow
     proto: udp
-    port: "{{ wg_admin_listen_port }}"
+    port: "{{ wg_admin_hub_listen_port }}"
     comment: "WireGuard admin hub (wg-admin)"
 
 - name: Enable and start the wg-quick unit for the admin hub
   ansible.builtin.systemd:
-    name: "{{ _wg_admin_systemd_unit }}"
+    name: "{{ _wg_admin_hub_systemd_unit }}"
     enabled: true
     state: started
     daemon_reload: true
@@ -141,11 +141,11 @@
 
 - name: Verify the WireGuard interface is up
   ansible.builtin.command:
-    cmd: "wg show {{ wg_admin_interface_name }}"
-  register: _wg_admin_show
+    cmd: "wg show {{ wg_admin_hub_interface_name }}"
+  register: _wg_admin_hub_show
   retries: 10
   delay: 2
-  until: _wg_admin_show.rc == 0
+  until: _wg_admin_hub_show.rc == 0
   changed_when: false
   check_mode: false
 
@@ -155,17 +155,17 @@
 - name: Show client-side connection info
   ansible.builtin.debug:
     msg: |
-      WireGuard admin hub is up on UDP {{ wg_admin_listen_port }}.
+      WireGuard admin hub is up on UDP {{ wg_admin_hub_listen_port }}.
 
       Hub public key (copy into client [Peer] sections):
-        {{ _wg_admin_public_key }}
+        {{ _wg_admin_hub_public_key }}
 
       Client config:
-        Endpoint   = {{ wg_admin_endpoint_fqdn }}:{{ wg_admin_listen_port }}
-        AllowedIPs = {{ wg_admin_subnet }}
+        Endpoint   = {{ wg_admin_hub_endpoint_fqdn }}:{{ wg_admin_hub_listen_port }}
+        AllowedIPs = {{ wg_admin_hub_subnet }}
         Hub tunnel address = {{ wg_admin_hub_address }}
 
       Configured peers (name -> tunnel IP):
-      {% for p in wg_admin_peers %}
+      {% for p in wg_admin_hub_peers %}
         - {{ p.name }} -> {{ p.allowed_ips }}
       {% endfor %}

@@ -5,7 +5,7 @@
 # sur le hub au moment du restart. Documenté dans le runbook session-6.
 - name: Restarting wireguard hub
   ansible.builtin.systemd:
-    name: "{{ _wg_admin_systemd_unit }}"
+    name: "{{ _wg_admin_hub_systemd_unit }}"
     state: restarted
     daemon_reload: true
 

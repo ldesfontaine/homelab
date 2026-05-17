@@ -1,6 +1,6 @@
 ---
 # ===========================================================================
-# Variables surchargeables du rôle `wireguard_hub`
+# Variables surchargeables du rôle `wg_admin_hub`
 # ===========================================================================
 # Référence : docs/adr/ADR-000-fondations-ansible.md
 #             docs/adr/ADR-002-firewall-strategy.md (port natif host, hors Docker)
@@ -17,21 +17,21 @@
 # ───────────────────────────────────────────────────────────────────────────
 # Nom de l'interface wg + du fichier conf : /etc/wireguard/<nom>.conf piloté
 # par l'unit systemd wg-quick@<nom>.
-wg_admin_interface_name: "wg-admin"
+wg_admin_hub_interface_name: "wg-admin"
 
 # Port UDP du hub. Ouvert en UFW INPUT (natif host, pas DOCKER-USER).
 # Cf. table ADR-002 — 51821/udp = WG admin.
-wg_admin_listen_port: 51821
+wg_admin_hub_listen_port: 51821
 
 # Sous-réseau du tunnel admin. Hub à .1, peers à partir de .10.
 # La plage .2-.9 est réservée pour le futur peer OPNsense (.2) et marges.
-wg_admin_subnet: "10.99.10.0/24"
+wg_admin_hub_subnet: "10.99.10.0/24"
 wg_admin_hub_address: "10.99.10.1/24"
 
 # FQDN annoncé aux clients dans leur conf (Endpoint =). Le record DNS
 # correspondant doit pointer sur le VPS (DNS only, pas de proxy Cloudflare
 # pour de l'UDP).
-wg_admin_endpoint_fqdn: "wg-hub.{{ homelab_domain }}"
+wg_admin_hub_endpoint_fqdn: "wg-hub.{{ homelab_domain }}"
 
 # ───────────────────────────────────────────────────────────────────────────
 # Liste des peers admin
@@ -58,7 +58,7 @@ wg_admin_endpoint_fqdn: "wg-hub.{{ homelab_domain }}"
 #   - name: "opnsense-home"
 #     pubkey: "{{ vault_wg_peer_opnsense_pubkey }}"
 #     allowed_ips: "10.99.10.2/32, 10.10.10.0/24, 10.10.60.0/24, 10.10.70.0/24, 10.10.99.0/24"
-wg_admin_peers:
+wg_admin_hub_peers:
   - name: "laptop-admin"
     pubkey: "{{ vault_wg_peer_laptop_pubkey }}"
     allowed_ips: "10.99.10.10/32"

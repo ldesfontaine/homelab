@@ -1,6 +1,6 @@
 ---
 galaxy_info:
-  role_name: wireguard_hub
+  role_name: wg_admin_hub
   author: ldesfontaine
   description: >-
     Hub WireGuard natif (systemd wg-quick@) sur le VPS pour l'accès admin

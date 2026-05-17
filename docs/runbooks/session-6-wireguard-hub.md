@@ -3,7 +3,7 @@
 > **Statut** : actif — v1.0 — auteur `ldesfontaine`
 > **Référence** : `docs/adr/ADR-002-firewall-strategy.md` (51821/udp ouvert en UFW INPUT classique — natif host, hors DOCKER-USER), `docs/adr/ADR-000-fondations-ansible.md` (idempotence, no_log secrets, perms explicites)
 > **Playbook** : `ansible/playbooks/deploy-vps-services.yml`
-> **Rôles touchés** : `wireguard_hub` (nouveau)
+> **Rôles touchés** : `wg_admin_hub` (nouveau)
 
 Objectif de la session : monter un **hub WireGuard natif sur le VPS** (systemd `wg-quick@wg-admin`, hors Docker) pour accéder aux interfaces d'admin internes (dashboard Pangolin `:3001`, futur dashboard Traefik, futurs monitoring/IDP/coffre) sans jamais les exposer publiquement. Subnet `10.99.10.0/24`, hub à `10.99.10.1`, écoute UDP `51821`, deux peers admin déclarés (laptop + phone). Le futur peer OPNsense maison est conservé en placeholder commenté pour la phase Proxmox.
 
@@ -60,7 +60,7 @@ vault_wg_peer_laptop_pubkey: "<contenu de laptop-pub.key>"
 vault_wg_peer_phone_pubkey:  "<contenu de phone-pub.key>"
 ```
 
-> **Note** : si `vault_wg_peer_laptop_pubkey` ou `vault_wg_peer_phone_pubkey` est absent du vault, le rôle `wireguard_hub` **plante tôt** au render du template (`'vault_wg_peer_...' is undefined`) — fail-fast volontaire, on ne déploie pas un hub avec un peer vide.
+> **Note** : si `vault_wg_peer_laptop_pubkey` ou `vault_wg_peer_phone_pubkey` est absent du vault, le rôle `wg_admin_hub` **plante tôt** au render du template (`'vault_wg_peer_...' is undefined`) — fail-fast volontaire, on ne déploie pas un hub avec un peer vide.
 
 ### 1.3. Record DNS
 
@@ -91,12 +91,12 @@ cd ansible
 ansible-playbook playbooks/deploy-vps-services.yml --syntax-check
 
 # Lint
-ansible-lint roles/wireguard_hub
-yamllint -c ../.yamllint roles/wireguard_hub playbooks/deploy-vps-services.yml
+ansible-lint roles/wg_admin_hub
+yamllint -c ../.yamllint roles/wg_admin_hub playbooks/deploy-vps-services.yml
 
 # Dry-run (le rôle est entièrement compatible --check)
 ansible-playbook -i inventory/00-static.yml playbooks/deploy-vps-services.yml \
-  --check --diff --tags wireguard_hub
+  --check --diff --tags wg_admin_hub
 ```
 
 ---
@@ -106,7 +106,7 @@ ansible-playbook -i inventory/00-static.yml playbooks/deploy-vps-services.yml \
 ```bash
 cd ansible
 ansible-playbook -i inventory/00-static.yml playbooks/deploy-vps-services.yml \
-  --tags wireguard_hub --diff
+  --tags wg_admin_hub --diff
 ```
 
 Effets attendus au premier run :
@@ -366,7 +366,7 @@ Une fois le laptop validé : `sudo wg-quick down homelab`. Activer le tunnel sur
 ```bash
 cd ansible
 ansible-playbook -i inventory/00-static.yml playbooks/deploy-vps-services.yml \
-  --tags wireguard_hub --diff
+  --tags wg_admin_hub --diff
 ```
 
 Doit afficher `changed=0`. Les tasks read-only (`Derive the WireGuard public key`, `Verify the WireGuard interface is up`) ont `changed_when: false` et n'apparaissent donc pas comme changements.
@@ -385,8 +385,8 @@ Quand la VM OPNsense sera up et que le tunnel maison ↔ VPS devra router le LAN
 
 1. Générer la paire WG côté OPNsense (UI plugin WireGuard ou CLI).
 2. `ansible-vault edit ansible/inventory/group_vars/vps/vault.yml` → ajouter `vault_wg_peer_opnsense_pubkey: "<pubkey>"`.
-3. Dans `ansible/roles/wireguard_hub/defaults/main.yml` → décommenter le bloc `opnsense-home` (commentaire en tête de `wg_admin_peers`) et le repositionner dans la liste.
-4. Rejouer le rôle : `ansible-playbook ... --tags wireguard_hub --diff`. Le hub ajoute la `[Peer]` section, handler `Restarting wireguard hub` déclenché — coupure brève (cf. section 2 attention).
+3. Dans `ansible/roles/wg_admin_hub/defaults/main.yml` → décommenter le bloc `opnsense-home` (commentaire en tête de `wg_admin_hub_peers`) et le repositionner dans la liste.
+4. Rejouer le rôle : `ansible-playbook ... --tags wg_admin_hub --diff`. Le hub ajoute la `[Peer]` section, handler `Restarting wireguard hub` déclenché — coupure brève (cf. section 2 attention).
 5. Côté OPNsense, configurer son peer client avec l'endpoint `wg-hub.ldesfontaine.com:51821` + pubkey VPS + AllowedIPs `10.99.10.0/24` (ou élargi selon besoin de routage retour).
 
 Le forwarding IPv4 est déjà actif sur le hub (sysctl + PostUp iptables) — pas de modif côté VPS au-delà du décommentage.
@@ -464,7 +464,7 @@ Comportement attendu : le handler `Restarting wireguard hub` (`systemctl restart
 
 Mitigation :
 - Rejouer Ansible depuis une session SSH directe (sans passer par le tunnel WG).
-- Ou utiliser `--tags wireguard_hub --check` d'abord pour vérifier qu'il n'y a pas de changement à appliquer (`changed=0` → safe à skipper).
+- Ou utiliser `--tags wg_admin_hub --check` d'abord pour vérifier qu'il n'y a pas de changement à appliquer (`changed=0` → safe à skipper).
 
 ### 10.5. `systemctl status wg-quick@wg-admin` en `failed`
 
@@ -521,7 +521,7 @@ Côté git :
 
 ```bash
 git revert <sha-session-6-commits>
-# Le rôle disparaît du playbook → run suivant : skip silencieux (tag wireguard_hub
+# Le rôle disparaît du playbook → run suivant : skip silencieux (tag wg_admin_hub
 # matche zéro rôle).
 ```
 
@@ -537,7 +537,7 @@ sudo rm /etc/wireguard/wg-admin.key
 # Côté laptop — rejouer Ansible
 cd ansible
 ansible-playbook -i inventory/00-static.yml playbooks/deploy-vps-services.yml \
-  --tags wireguard_hub --diff
+  --tags wg_admin_hub --diff
 ```
 
 La nouvelle pubkey s'affiche en sortie de run. **Mettre à jour les fichiers `.conf` clients** (`PublicKey = ...` section `[Peer]`) avec la nouvelle valeur, puis `wg-quick down / up` côté chaque client.
@@ -556,6 +556,6 @@ La nouvelle pubkey s'affiche en sortie de run. **Mettre à jour les fichiers `.c
 
 ## 13. Journal d'exécution
 
-| Date | Opérateur | `changed=` (wireguard_hub) | Tunnel laptop OK ? | Tunnel phone OK ? | Notes |
+| Date | Opérateur | `changed=` (wg_admin_hub) | Tunnel laptop OK ? | Tunnel phone OK ? | Notes |
 |---|---|---|---|---|---|
 |  |  |  |  |  |  |
