@@ -1,0 +1,46 @@
+---
+# ---------------------------------------------------------------------------
+# Déploiement compose + pull image + healthcheck
+# ---------------------------------------------------------------------------
+
+- name: Deploy docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ _portfolio_compose_file }}"
+    owner: root
+    group: root
+    mode: '0644'
+    backup: true
+
+- name: Deploy .env file (contains PAYLOAD_SECRET — restricted perms)
+  ansible.builtin.template:
+    src: env.j2
+    dest: "{{ _portfolio_env_file }}"
+    owner: root
+    group: root
+    mode: '0600'
+    backup: true
+  no_log: true
+
+- name: Pull portfolio image
+  community.docker.docker_image:
+    name: "{{ portfolio_image }}:{{ portfolio_image_tag }}"
+    source: pull
+
+- name: Start portfolio stack via compose
+  community.docker.docker_compose_v2:
+    project_src: "{{ portfolio_compose_dir }}"
+    state: present
+    pull: missing
+
+- name: Wait for portfolio HTTP availability (only when bound on localhost)
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ portfolio_container_port }}/"
+    status_code: [200, 301, 302]
+    timeout: 10
+  register: _portfolio_health
+  retries: 12
+  delay: 5
+  until: _portfolio_health.status in [200, 301, 302]
+  when: portfolio_bind_localhost | bool
+  changed_when: false

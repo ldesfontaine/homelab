@@ -1,0 +1,53 @@
+# {{ ansible_managed }}
+#
+# Portfolio — déploiement session 3
+# - Image pull depuis GHCR (ADR-000 Décision 6, pas de build sur le VPS)
+# - Binding 127.0.0.1 uniquement en session 3 (test via SSH tunnel)
+# - En session 4 (Pangolin) : portfolio_bind_localhost=false, container
+#   devient internal-only et joint le réseau Docker partagé avec Pangolin
+
+services:
+  portfolio:
+    image: {{ portfolio_image }}:{{ portfolio_image_tag }}
+    container_name: {{ _portfolio_container_name }}
+    restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp
+      - /app/.next/cache
+    environment:
+      HOSTNAME: 0.0.0.0
+      NODE_ENV: production
+      PAYLOAD_SECRET: ${PAYLOAD_SECRET}
+      DATABASE_URI: file:/data/payload.db
+      SITE_URL: {{ portfolio_site_url }}
+      GOATCOUNTER_VHOST: {{ portfolio_goatcounter_vhost }}
+{% if portfolio_bind_localhost %}
+    ports:
+      # Binding 127.0.0.1 — non exposé sur internet (cf. ADR-002).
+      # Bascule à false en session 4, le port disparaît.
+      - "127.0.0.1:{{ portfolio_container_port }}:{{ portfolio_container_port }}"
+{% endif %}
+    volumes:
+      - {{ portfolio_data_volume }}:/data
+      - {{ portfolio_media_volume }}:/app/media
+    networks:
+      - {{ portfolio_docker_network }}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:{{ portfolio_container_port }}/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  {{ portfolio_data_volume }}:
+  {{ portfolio_media_volume }}:
+
+networks:
+  {{ portfolio_docker_network }}:
+    external: true

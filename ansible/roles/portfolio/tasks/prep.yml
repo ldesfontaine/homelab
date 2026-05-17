@@ -1,0 +1,17 @@
+---
+# ---------------------------------------------------------------------------
+# Préparation : répertoire compose + réseau Docker dédié
+# ---------------------------------------------------------------------------
+
+- name: Ensure portfolio compose directory exists
+  ansible.builtin.file:
+    path: "{{ portfolio_compose_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Create dedicated Docker network for portfolio
+  community.docker.docker_network:
+    name: "{{ portfolio_docker_network }}"
+    state: present

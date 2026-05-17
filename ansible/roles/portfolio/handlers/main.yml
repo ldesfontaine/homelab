@@ -1,0 +1,4 @@
+---
+# Pas de handler pour cette session : la (re)convergence du compose est
+# gérée directement par community.docker.docker_compose_v2 dans deploy.yml.
+# Fichier conservé pour la structure standard ansible-galaxy.
