@@ -6,3 +6,4 @@
 # Port SSH cible du VPS (ADR-004)
 # Bootstrap se fait sur ssh_bootstrap_port (22), puis bascule sur ce port.
 ssh_target_port: 2203
+portfolio_image_tag: "0.0.4"
