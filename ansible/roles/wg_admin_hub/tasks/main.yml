@@ -105,7 +105,7 @@
 - name: Persist net.ipv4.ip_forward across reboots
   ansible.builtin.copy:
     content: |
-      # {{ ansible_managed }}
+      # Managed by Ansible -- role wg_admin_hub -- DO NOT EDIT MANUALLY
       # Forward IPv4 -- required by the wg-admin hub so the future OPNsense
       # peer can route its LAN traffic through this tunnel. The wg-admin
       # PostUp also sets it at interface bring-up, but this file applies
