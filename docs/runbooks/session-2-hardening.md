@@ -165,7 +165,16 @@ ssh -p 2203 deploy@<ip> 'systemctl list-timers apt-daily.timer apt-daily-upgrade
 ssh -p 2203 deploy@<ip> 'sudo sysctl kernel.kptr_restrict kernel.yama.ptrace_scope net.ipv4.ip_forward net.ipv6.conf.all.disable_ipv6'
 ```
 
-Attendu : `kernel.kptr_restrict = 2`, `kernel.yama.ptrace_scope = 1`, `net.ipv4.ip_forward = 0`, `net.ipv6.conf.all.disable_ipv6 = 0` (IPv6 reste activé).
+Attendu : `kernel.kptr_restrict = 2`, `kernel.yama.ptrace_scope = 1`, `net.ipv4.ip_forward = 1` (exception explicite, cf. §6 — Docker DNAT + wg-admin), `net.ipv6.conf.all.disable_ipv6 = 0` (IPv6 reste activé).
+
+#### Exception sysctl — `net.ipv4.ip_forward = 1`
+
+Le rôle `hardening` override la baseline devsec via `hardening_sysctl_overrides` (cf. [defaults/main.yml](../../ansible/roles/hardening/defaults/main.yml)) pour forcer `net.ipv4.ip_forward: 1`. Justification :
+
+- **Docker** : sans IP forwarding, la chaîne `nat/PREROUTING` (DNAT vers les containers exposés par Pangolin et publiés via `ufw-docker allow`) est inopérante. Symptôme : containers up + UFW OK + ports en écoute, mais aucun trafic externe ne joint un service publié.
+- **wg-admin** : le hub WireGuard route les paquets entre peers admin et le subnet `10.99.10.0/24`. Sans `ip_forward=1`, le forwarding kernel bloque tous les paquets traversants.
+
+Le `PostUp` de `wg-quick@wg-admin` pose aussi `sysctl -w net.ipv4.ip_forward=1` mais **ne se rejoue pas** quand l'interface est déjà up. Sans l'override du rôle hardening, chaque run de `harden.yml` ramenait l'host à `0` au runtime → incident production 2026-05-17 (portfolio inaccessible ~1h). L'override garantit que c'est la valeur définitive posée par `devsec.hardening.os_hardening` lui-même, idempotente, persistée dans `/etc/sysctl.d/`.
 
 ### 4.7. Idempotence (le test qui valide vraiment la session)
 

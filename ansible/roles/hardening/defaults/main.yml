@@ -25,13 +25,22 @@ hardening_apply_ssh: true
 # Overrides OS — passés à devsec.hardening.os_hardening via include_role
 # ──────────────────────────────────────────────────────────────────────────
 
-# IPv6 reste activé (le VPS Hetzner a une IPv6 publique). Forwarding désactivé
-# car le VPS n'est pas un routeur. Override possible par groupe (futur host
-# Proxmox / OPNsense aura forwarding=1).
+# IPv6 reste activé (le VPS Hetzner a une IPv6 publique).
+#
+# net.ipv4.ip_forward=1 : exception explicite à la baseline devsec (qui pose 0).
+# Docker (DNAT vers containers via la chaîne nat/PREROUTING) ET wg-admin
+# (forwarding peer-to-peer pour les futurs admins joignant le subnet 10.99.10.0/24)
+# requièrent ip_forward=1 côté kernel. Sans cet override, devsec.hardening force
+# 0 au runtime à chaque run de harden.yml, ce qui casse le routage vers les
+# containers (PostUp de wg-quick met = 1 à l'activation de l'interface mais
+# ne se rejoue pas si l'interface est déjà up).
+# Cf. incident 2026-05-17 (portfolio inaccessible ~1h) — runbook session-6 §12.
+#
+# Le forwarding IPv6 reste à 0 (aucun service ne l'exige aujourd'hui).
 hardening_sysctl_overrides:
   net.ipv6.conf.all.disable_ipv6: 0
   net.ipv6.conf.default.disable_ipv6: 0
-  net.ipv4.ip_forward: 0
+  net.ipv4.ip_forward: 1
   net.ipv6.conf.all.forwarding: 0
 
 # Le user `deploy` est admin (sudo NOPASSWD via clé SSH). Pas d'expiration
