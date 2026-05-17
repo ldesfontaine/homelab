@@ -26,6 +26,12 @@ pangolin_gerbil_image: "docker.io/fosrl/gerbil"
 pangolin_traefik_version: "v3.6"
 pangolin_traefik_image: "docker.io/traefik"
 
+# Plugin CrowdSec bouncer pour Traefik (session 5). Vérifier la dernière
+# version stable compatible Traefik v3 :
+#   https://github.com/maxlerebourg/crowdsec-bouncer-traefik-plugin/releases
+# La valeur peut être surchargée dans inventory/group_vars/vps/vars.yml.
+pangolin_traefik_plugin_crowdsec_version: "v1.6.0"
+
 # ───────────────────────────────────────────────────────────────────────────
 # Identité applicative
 # ───────────────────────────────────────────────────────────────────────────
@@ -107,3 +113,11 @@ pangolin_routes:
 # Port d'écoute du container portfolio sur le réseau pangolin-net.
 # Doit correspondre à `portfolio_container_port` dans le rôle portfolio.
 pangolin_portfolio_backend_port: 3000
+
+# Middlewares Traefik appliqués à tous les routers backend (clé `backend_url`)
+# définis dans pangolin_routes. NE PAS appliquer aux routers redirect : ils
+# pointent vers noop-service et leur seul rôle est le 308 vers le router cible.
+# Session 5 : le bouncer CrowdSec est défini dans dynamic_config.yml.j2 et
+# alimenté par le rôle `crowdsec` (LAPI joignable via DNS Docker).
+pangolin_default_middlewares:
+  - crowdsec-bouncer

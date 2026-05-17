@@ -26,6 +26,12 @@ experimental:
     badger:
       moduleName: "github.com/fosrl/badger"
       version: "v1.3.1"
+    # Plugin CrowdSec — appliqué aux routers backend via le middleware
+    # `crowdsec-bouncer` défini dans dynamic_config.yml (cf. session 5).
+    # Le plugin contacte l'agent via DNS Docker (crowdsec:8080) sur pangolin-net.
+    crowdsec-bouncer:
+      moduleName: "github.com/maxlerebourg/crowdsec-bouncer-traefik-plugin"
+      version: "{{ pangolin_traefik_plugin_crowdsec_version }}"
 
 log:
   level: "INFO"
@@ -35,9 +41,23 @@ log:
   maxAge: 3
   compress: true
 
+# accessLog en JSON pour que le parser `crowdsecurity/traefik` ingère
+# proprement les champs (URL, status, IP réelle via X-Forwarded-For).
+# Les headers sensibles (cookies Payload, auth) sont dropés par défaut ;
+# on ne garde que ceux utiles à la détection (User-Agent, Referer, IPs).
 accessLog:
   filePath: "/var/log/traefik/access.log"
   bufferingSize: 100
+  format: json
+  fields:
+    defaultMode: keep
+    headers:
+      defaultMode: drop
+      names:
+        User-Agent: keep
+        Referer: keep
+        X-Forwarded-For: keep
+        X-Real-Ip: keep
 
 certificatesResolvers:
   {{ pangolin_letsencrypt_resolver_name }}:

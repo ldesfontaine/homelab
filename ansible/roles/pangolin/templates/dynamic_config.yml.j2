@@ -4,6 +4,11 @@
 # Ces routes s'AJOUTENT à celles que Pangolin sert via son HTTP provider
 # (pangolin:3001/api/v1/traefik-config) — pas de conflit tant qu'aucun
 # hostname n'est dupliqué.
+#
+# Session 5 : tous les routers `backend_url` reçoivent les middlewares listés
+# dans `pangolin_default_middlewares` (par défaut : crowdsec-bouncer). Les
+# routers `redirect_to` (apex) NE sont PAS protégés — ce ne sont que des 308
+# vers le router cible qui, lui, sera filtré.
 
 http:
   routers:
@@ -14,6 +19,13 @@ http:
       service: {{ route.name }}-service
       entryPoints:
         - websecure
+{%     set _route_middlewares = pangolin_default_middlewares | default([]) %}
+{%     if _route_middlewares | length > 0 %}
+      middlewares:
+{%       for mw in _route_middlewares %}
+        - {{ mw }}
+{%       endfor %}
+{%     endif %}
       tls:
         certResolver: {{ pangolin_letsencrypt_resolver_name }}
 {%   elif route.redirect_to is defined %}
@@ -54,3 +66,32 @@ http:
         permanent: {{ route.permanent | default(true) | string | lower }}
 {%   endif %}
 {% endfor %}
+    # Bouncer CrowdSec — délègue à l'agent (crowdsec:8080 sur pangolin-net)
+    # la décision de bloquer une IP. Mode `stream` : le plugin maintient un
+    # cache local synchronisé périodiquement, donc pas d'appel LAPI par
+    # requête. `updateMaxFailure: 0` = fail-open si l'agent est indisponible
+    # (on préfère laisser passer plutôt que casser le site).
+    #
+    # `forwardedHeadersTrustedIPs` / `clientTrustedIPs` listent les sources
+    # autorisées à fournir un header X-Forwarded-For/X-Real-IP — sinon Traefik
+    # logue l'IP du dernier hop (loopback ou Docker bridge) et le bouncer
+    # banit le réseau Docker au lieu du vrai client.
+    crowdsec-bouncer:
+      plugin:
+        crowdsec-bouncer:
+          enabled: true
+          logLevel: "INFO"
+          crowdsecMode: "stream"
+          updateIntervalSeconds: 15
+          updateMaxFailure: 0
+          defaultDecisionSeconds: 60
+          httpTimeoutSeconds: 10
+          crowdsecLapiKey: "{{ vault_crowdsec_bouncer_key }}"
+          crowdsecLapiHost: "crowdsec:8080"
+          crowdsecLapiScheme: "http"
+          forwardedHeadersTrustedIPs:
+            - "127.0.0.1/32"
+            - "172.16.0.0/12"
+          clientTrustedIPs:
+            - "127.0.0.1/32"
+            - "172.16.0.0/12"

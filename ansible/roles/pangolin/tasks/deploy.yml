@@ -40,6 +40,7 @@
     group: root
     mode: '0644'
     backup: true
+  notify: Restarting traefik
 
 - name: Deploy Traefik dynamic config (dynamic_config.yml)
   ansible.builtin.template:
@@ -49,6 +50,9 @@
     group: root
     mode: '0644'
     backup: true
+  # Contient désormais vault_crowdsec_bouncer_key (middleware bouncer).
+  # Traefik recharge ce fichier à chaud (watch: true), pas de handler.
+  no_log: true
 
 - name: Pull Pangolin / Gerbil / Traefik images
   community.docker.docker_image:

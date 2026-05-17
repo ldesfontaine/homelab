@@ -1,6 +1,14 @@
 ---
-# Pas de handler explicite : la (re)convergence du stack est gérée par
-# community.docker.docker_compose_v2 dans deploy.yml. Le file provider
-# Traefik est en `watch: true`, donc tout changement de dynamic_config.yml
-# est rechargé à chaud sans restart.
-# Fichier conservé pour la structure standard ansible-galaxy.
+# La config DYNAMIQUE Traefik (dynamic_config.yml) est rechargée à chaud par
+# le file provider (watch: true). Aucun handler nécessaire pour ces changements.
+#
+# La config STATIQUE Traefik (traefik_config.yml) — entryPoints, plugins,
+# accessLog, certResolvers — n'est lue qu'au démarrage : un changement
+# implique un restart du container. Idem pour le compose lui-même.
+
+- name: Restarting traefik
+  community.docker.docker_compose_v2:
+    project_src: "{{ pangolin_compose_dir }}"
+    services:
+      - "{{ _pangolin_traefik_container_name }}"
+    state: restarted
