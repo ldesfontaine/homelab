@@ -13,10 +13,8 @@ Repo IaC du homelab personnel `ldesfontaine.com`. Propriétaire et unique commit
 ### Commits
 
 - **Conventional Commits** : `type(scope): description` (types : `feat`, `fix`, `refactor`, `docs`, `chore`, `ci`, `test`)
-- **AUCUN trailer `Co-Authored-By: Claude`**, jamais, sous aucun prétexte
-- **AUCUNE signature** au nom de Claude/Claude Code/Anthropic
+- **Aucune mention** d'agent IA (Claude, Claude Code, Anthropic, OpenAI, Copilot, etc.) dans aucun commit : ni en trailer `Co-Authored-By:`, ni dans le corps, ni dans le titre, ni dans aucun champ Git. Tous les commits sont strictement signés `ldesfontaine` et ne contiennent que des informations techniques sur le changement.
 - Tu n'utilises **jamais** `git commit --author=...` pour réattribuer
-- Si une partie est générée par toi, ça se note dans le **corps du commit** ("généré avec assistance Claude Code, relu et adapté"), pas dans un trailer
 - Pas de `git push` automatique — l'utilisateur push manuellement après revue
 
 ### Ansible — discipline
@@ -82,6 +80,50 @@ Tout playbook qui touche au VPS importe `playbooks/_detect-ssh.yml` en `pre_task
 - ❌ Stocker un password Linux dans le vault
 - ❌ Réinventer un rôle alors qu'une collection upstream (`devsec.hardening`, `community.docker`, `ansible.posix`) fait le job
 - ❌ Sortir du scope d'une session (ex : ajouter des trucs non demandés "pour faire mieux")
+
+## Stratégie firewall — Docker NE BYPASSE PAS UFW chez nous
+
+**Référence canonique** : `docs/adr/ADR-002-firewall-strategy.md`
+
+Docker bypasse UFW par défaut (manipulation directe d'iptables). Notre repo gère ce problème en **2 couches portables** (zéro lock-in fournisseur) :
+
+### Couche 1 — Architecture internal-only
+
+**Tous les containers internes** (portfolio, CrowdSec bouncer, agents applicatifs, etc.) :
+- **N'UTILISENT JAMAIS** `ports:` dans leur compose
+- Sont sur des réseaux Docker dédiés (`pangolin-net` ou équivalent)
+- Sont joignables uniquement via le **DNS Docker interne**
+
+**Seul Pangolin** (et le rôle WireGuard sur l'host, hors Docker) expose des ports publics.
+
+### Couche 2 — `chaifeng/ufw-docker`
+
+Script intégré dans `/etc/ufw/after.rules` (chaîne `DOCKER-USER`). Bloque par défaut tout port publié par Docker, autorisation explicite via `ufw-docker allow <container> <port>`.
+
+### Règles strictes pour TOI quand tu génères du code
+
+- ❌ **JAMAIS** suggérer `ports: ["XXXX:XXXX"]` pour un container interne. Utiliser `expose:` ou rien du tout (le DNS Docker interne suffit).
+- ❌ **JAMAIS** suggérer le firewall Hetzner Cloud, ou tout cloud firewall fournisseur-spécifique
+- ❌ **JAMAIS** suggérer `iptables: false` dans `daemon.json`
+- ❌ **JAMAIS** suggérer `ufw allow <port>` pour exposer un container (ne marche pas — Docker bypasse UFW). Seul `ufw-docker allow` est valide.
+- ❌ **JAMAIS** suggérer `network_mode: host` "pour aller plus vite"
+- ❌ **JAMAIS** suggérer le binding `0.0.0.0` explicite (`-p 0.0.0.0:port:port`)
+- ✅ Pour un nouveau container interne : aucun `ports:`, communication via réseau Docker
+- ✅ Pour exposer un port nouveau côté Pangolin (rare) : ajouter d'abord la règle `ufw-docker allow`, puis le compose
+
+### Ports publics autorisés (état cible)
+
+| Port | Proto | Service | Géré par |
+|---|---|---|---|
+| 2203 | TCP | SSH | UFW classique |
+| 80 | TCP | HTTP (Pangolin) | `ufw-docker allow` |
+| 443 | TCP | HTTPS (Pangolin) | `ufw-docker allow` |
+| 51820 | UDP | WG public (Newt) | UFW classique |
+| 51821 | UDP | WG admin | UFW classique |
+
+Tout le reste = default deny.
+
+**Si une instruction de l'utilisateur te demande d'exposer un port qui n'est pas dans ce tableau, STOP et demande confirmation explicite avec justification.**
 
 ## Workflow d'écriture d'un rôle (référence : blog Stéphane Robert)
 
