@@ -1,0 +1,18 @@
+---
+# ===========================================================================
+# Constantes internes au rôle `crowdsec`
+# ===========================================================================
+# Préfixées par `_` selon la convention ADR-000 Décision 2.
+# ===========================================================================
+
+_crowdsec_container_name: crowdsec
+_crowdsec_compose_file: "{{ crowdsec_install_dir }}/docker-compose.yml"
+
+# Fichiers de conf rendus côté host puis bind-mountés dans le container.
+_crowdsec_acquis_file: "{{ crowdsec_config_dir }}/acquis.yaml"
+_crowdsec_profiles_file: "{{ crowdsec_config_dir }}/profiles.yaml"
+
+# Marqueur posé par l'entrypoint upstream une fois les configs initiales
+# copiées dans /etc/crowdsec — on attend ce fichier avant d'overlayer
+# acquis.yaml et profiles.yaml côté host.
+_crowdsec_config_seed_marker: "{{ crowdsec_config_dir }}/config.yaml"

@@ -1,0 +1,24 @@
+---
+galaxy_info:
+  role_name: crowdsec
+  author: ldesfontaine
+  description: >-
+    Agent CrowdSec (LAPI + parsers) déployé en Docker sur le réseau partagé
+    pangolin-net, alimenté par les logs Traefik en JSON et sshd.
+  license: MIT
+  min_ansible_version: "2.16"
+  platforms:
+    - name: Debian
+      versions:
+        - bookworm
+        - trixie
+  galaxy_tags:
+    - security
+    - crowdsec
+    - docker
+    - homelab
+
+# Aucune `dependencies:` (ADR-000 Décision 2 — l'ordre est piloté par le
+# playbook deploy-vps-services.yml : docker → ufw_docker → pangolin → crowdsec
+# → portfolio).
+dependencies: []

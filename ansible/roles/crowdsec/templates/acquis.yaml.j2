@@ -1,0 +1,21 @@
+# {{ ansible_managed }} — DO NOT EDIT MANUALLY
+#
+# Sources d'acquisition CrowdSec. Le parser `crowdsecurity/traefik`
+# (collection traefik) auto-détecte le format JSON dès lors que Traefik
+# émet ses logs avec `accessLog.format: json` — fait dans le rôle pangolin
+# (templates/traefik_config.yml.j2).
+
+---
+filenames:
+  - /var/log/traefik/access.log
+labels:
+  type: traefik
+
+---
+# Logs sshd host (auth.log) — la collection `crowdsecurity/sshd` apporte
+# brute-force et exfiltration tentative. Complémente fail2ban (rôle hardening),
+# qui reste actif comme deuxième barrière au niveau iptables.
+filenames:
+  - /var/log/auth.log
+labels:
+  type: syslog
