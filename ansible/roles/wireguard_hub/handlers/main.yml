@@ -1,0 +1,17 @@
+---
+# Restart de l'unit wg-quick@ — ATTENTION : coupe le tunnel ~2-3 secondes,
+# tout peer connecté au moment du run perd sa session. Premier déploiement
+# OK (personne connecté) ; runs ultérieurs : prévoir de ne pas être branché
+# sur le hub au moment du restart. Documenté dans le runbook session-6.
+- name: Restarting wireguard hub
+  ansible.builtin.systemd:
+    name: "{{ _wg_admin_systemd_unit }}"
+    state: restarted
+    daemon_reload: true
+
+# Recharge /etc/sysctl.d/*.conf — utilisé pour appliquer la persistance
+# net.ipv4.ip_forward sans reboot.
+- name: Reloading sysctl
+  ansible.builtin.command:
+    cmd: sysctl --system
+  changed_when: true

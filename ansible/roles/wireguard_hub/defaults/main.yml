@@ -1,0 +1,67 @@
+---
+# ===========================================================================
+# Variables surchargeables du rôle `wireguard_hub`
+# ===========================================================================
+# Référence : docs/adr/ADR-000-fondations-ansible.md
+#             docs/adr/ADR-002-firewall-strategy.md (port natif host, hors Docker)
+# Runbook   : docs/runbooks/session-6-wireguard-hub.md
+# ===========================================================================
+# Hub WireGuard natif (systemd wg-quick@) pour l'accès admin distant aux
+# interfaces internes du VPS (dashboard Pangolin :3001, futur Traefik admin,
+# futur monitoring, etc.). Aucun service interne n'est exposé publiquement —
+# le tunnel WG est le seul mécanisme d'accès. Cf. ADR-002.
+# ===========================================================================
+
+# ───────────────────────────────────────────────────────────────────────────
+# Interface et réseau
+# ───────────────────────────────────────────────────────────────────────────
+# Nom de l'interface wg + du fichier conf : /etc/wireguard/<nom>.conf piloté
+# par l'unit systemd wg-quick@<nom>.
+wg_admin_interface_name: "wg-admin"
+
+# Port UDP du hub. Ouvert en UFW INPUT (natif host, pas DOCKER-USER).
+# Cf. table ADR-002 — 51821/udp = WG admin.
+wg_admin_listen_port: 51821
+
+# Sous-réseau du tunnel admin. Hub à .1, peers à partir de .10.
+# La plage .2-.9 est réservée pour le futur peer OPNsense (.2) et marges.
+wg_admin_subnet: "10.99.10.0/24"
+wg_admin_hub_address: "10.99.10.1/24"
+
+# FQDN annoncé aux clients dans leur conf (Endpoint =). Le record DNS
+# correspondant doit pointer sur le VPS (DNS only, pas de proxy Cloudflare
+# pour de l'UDP).
+wg_admin_endpoint_fqdn: "wg-hub.{{ homelab_domain }}"
+
+# ───────────────────────────────────────────────────────────────────────────
+# Liste des peers admin
+# ───────────────────────────────────────────────────────────────────────────
+# Les pubkeys sont générées localement par Lucas (laptop, phone) puis
+# déposées dans `inventory/group_vars/vps/vault.yml` sous la forme
+# `vault_wg_peer_<nom>_pubkey`. Les privkeys correspondantes ne quittent
+# JAMAIS la machine cliente.
+#
+# Lucas construit les fichiers .conf clients en local en combinant :
+#   - sa privkey locale
+#   - la pubkey VPS affichée en sortie du run (voir tasks/main.yml task finale)
+#   - l'IP allouée ci-dessous + l'endpoint public
+#
+# Placeholder OPNsense maison (commenté ci-dessous) : à activer en phase
+# Proxmox/OPNsense (hors scope session 6). À ce moment-là :
+#   1. ajouter `vault_wg_peer_opnsense_pubkey` au vault VPS
+#   2. décommenter le bloc opnsense-home dans la liste
+#   3. rejouer le rôle — le hub reload sa conf, aucun autre service touché
+# Les CIDR couvrent le LAN MGMT (10.10.10.0/24), SVC_PRIV (10.10.60.0/24),
+# LAN domestique (10.10.70.0/24) et MGMT WG ADMIN (10.10.99.0/24) selon le
+# cahier des charges réseau.
+#
+#   - name: "opnsense-home"
+#     pubkey: "{{ vault_wg_peer_opnsense_pubkey }}"
+#     allowed_ips: "10.99.10.2/32, 10.10.10.0/24, 10.10.60.0/24, 10.10.70.0/24, 10.10.99.0/24"
+wg_admin_peers:
+  - name: "laptop-admin"
+    pubkey: "{{ vault_wg_peer_laptop_pubkey }}"
+    allowed_ips: "10.99.10.10/32"
+  - name: "phone-admin"
+    pubkey: "{{ vault_wg_peer_phone_pubkey }}"
+    allowed_ips: "10.99.10.11/32"

@@ -1,0 +1,23 @@
+---
+galaxy_info:
+  role_name: wireguard_hub
+  author: ldesfontaine
+  description: >-
+    Hub WireGuard natif (systemd wg-quick@) sur le VPS pour l'accès admin
+    distant aux interfaces internes. Hors Docker — port UDP ouvert en UFW
+    INPUT classique (cf. ADR-002).
+  license: MIT
+  min_ansible_version: "2.16"
+  platforms:
+    - name: Debian
+      versions:
+        - trixie
+  galaxy_tags:
+    - wireguard
+    - vpn
+    - admin
+    - homelab
+
+# Aucune `dependencies:` (ADR-000 Décision 2 — l'ordre est piloté par le
+# playbook deploy-vps-services.yml).
+dependencies: []
