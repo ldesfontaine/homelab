@@ -366,6 +366,46 @@ docker exec crowdsec cscli decisions delete --all
 
 (supprime toutes les décisions actives — à utiliser uniquement en récupération).
 
+### 7.6. Plugins chargés ne contiennent pas `crowdsec-bouncer` après un run partiel
+
+Symptôme : `docker logs traefik | grep plugins` affiche `plugins=["badger"]` seul, ou le file provider remonte une erreur `unknown plugin type: crowdsec-bouncer` quand le middleware est référencé sur une route.
+
+Cause : un run précédent a échoué sur une task post-Traefik (typiquement côté `crowdsec`), donc le handler `Restarting traefik` notifié par le changement du template `traefik_config.yml` n'a **pas** été exécuté — Ansible skip tous les handlers en cas de fail dans le play. La conf statique sur disque est à jour (le plugin y est déclaré), mais le process Traefik tourne toujours avec l'ancienne conf en mémoire (un seul plugin `badger` chargé au boot précédent).
+
+Fix : forcer le rejeu des handlers ou redémarrer Traefik manuellement.
+
+```bash
+# Option A — rejouer le playbook en forçant les handlers même si une task fail
+cd ansible
+ansible-playbook -i inventory/00-static.yml playbooks/deploy-vps-services.yml \
+  --tags pangolin,crowdsec --force-handlers --diff
+
+# Option B — restart manuel de Traefik (court-circuite le retry du playbook)
+ssh -p 2203 deploy@<ip-vps> \
+  'sudo docker compose -f /opt/pangolin/docker-compose.yml restart traefik'
+```
+
+Vérifier ensuite que les deux plugins apparaissent dans la ligne `Plugins loaded` au boot :
+
+```bash
+docker logs traefik 2>&1 | grep -i 'plugins loaded'
+# Attendu : ... plugins=["badger" "crowdsec-bouncer"] (ordre indifférent)
+```
+
+### 7.7. `permission denied` sur `/opt/pangolin/.env` lors d'un restart manuel
+
+Symptôme : `docker compose -f /opt/pangolin/docker-compose.yml restart traefik` (ou tout autre `docker compose ...` sans `sudo`) échoue avec `open /opt/pangolin/.env: permission denied`.
+
+Cause : le fichier `.env` est rendu par le rôle pangolin en `root:root 0600` car il contient le token Cloudflare (Let's Encrypt DNS-01). L'utilisateur `deploy` ne peut pas le lire, et `docker compose` a besoin de le charger pour démarrer/restart un service (les variables y sont interpolées dans le compose).
+
+Fix : préfixer toutes les opérations `docker compose` manuelles avec `sudo`.
+
+```bash
+sudo docker compose -f /opt/pangolin/docker-compose.yml restart traefik
+```
+
+Alternative ponctuelle : `sudo docker restart traefik` court-circuite compose (et donc le `.env`) — le container existant est juste redémarré avec sa conf embarquée. Suffisant pour un simple reload après modification du template statique ; insuffisant si on a changé des variables d'env dans le compose (il faut alors `up -d` pour recréer le container avec le nouvel environnement).
+
 ---
 
 ## 8. Rollback
