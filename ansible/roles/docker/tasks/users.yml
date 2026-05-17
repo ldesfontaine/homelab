@@ -1,0 +1,14 @@
+---
+# ---------------------------------------------------------------------------
+# Gestion de l'appartenance au groupe `docker`
+# ---------------------------------------------------------------------------
+# Note : un user doit relogger pour que l'appartenance prenne effet côté
+# shell. Pas d'impact pour Ansible qui repasse par sudo.
+# ---------------------------------------------------------------------------
+
+- name: Add users to docker group
+  ansible.builtin.user:
+    name: "{{ item }}"
+    groups: docker
+    append: true
+  loop: "{{ docker_users_in_group }}"
