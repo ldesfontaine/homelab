@@ -98,32 +98,6 @@ pangolin_port_wg_data: 51820
 pangolin_port_wg_control: 21820
 
 # ───────────────────────────────────────────────────────────────────────────
-# Dashboard Pangolin — bindé sur l'IP du hub WG admin (cf. rôle wg_admin_hub,
-# valeur hub = 10.99.10.1). PAS d'exposition publique : seul moyen d'atteindre
-# le dashboard = monter d'abord le tunnel WG côté client.
-#
-# Pangolin upstream expose trois ports HTTP distincts (cf. config.yml,
-# section `server`) — IMPORTANT de bien choisir :
-#   * external_port (3000) — DASHBOARD UTILISATEUR : layer Express avec
-#                            login + auth + UI complète. C'est ce qu'on veut
-#                            binder, c'est aussi la cible de `dashboard_url`.
-#   * internal_port (3001) — API admin : Traefik consomme
-#                            /api/v1/traefik-config ici. Binder ce port-là
-#                            sert l'API et retourne 404 sur "/" (Express
-#                            « Cannot GET / »).
-#   * next_port    (3002) — serveur Next.js raw, sans la couche Express
-#                            auth. Pas utile à exposer.
-#
-# Si on hardcode `10.99.10.1` ici plutôt que de chaîner sur
-# `wg_admin_hub_address`, c'est pour ne pas créer de dépendance cross-rôle :
-# pangolin doit pouvoir être joué seul (`--tags pangolin`) sans que les vars
-# de wg_admin_hub soient résolues. Garder ces deux valeurs cohérentes
-# manuellement (rare : c'est l'IP du hub, elle ne bouge pas).
-# ───────────────────────────────────────────────────────────────────────────
-pangolin_port_dashboard: 3000
-pangolin_dashboard_bind_ip: "10.99.10.1"
-
-# ───────────────────────────────────────────────────────────────────────────
 # Routes statiques déclarées via le file provider de Traefik (en plus des
 # routes que Pangolin sert via son HTTP provider pour son propre dashboard).
 #

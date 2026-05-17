@@ -5,9 +5,9 @@
 > **Playbook** : `ansible/playbooks/deploy-vps-services.yml`
 > **Rôles touchés** : `wg_admin_hub` (nouveau)
 
-Objectif de la session : monter un **hub WireGuard natif sur le VPS** (systemd `wg-quick@wg-admin`, hors Docker) pour accéder aux interfaces d'admin internes (dashboard Pangolin `:3000`, futur dashboard Traefik, futurs monitoring/IDP/coffre) sans jamais les exposer publiquement. Subnet `10.99.10.0/24`, hub à `10.99.10.1`, écoute UDP `51821`, deux peers admin déclarés (laptop + phone). Le futur peer OPNsense maison est conservé en placeholder commenté pour la phase Proxmox.
+Objectif de la session : monter un **hub WireGuard natif sur le VPS** (systemd `wg-quick@wg-admin`, hors Docker) pour pré-câbler l'accès admin distant aux futurs services internes (monitoring, IDP, coffre, etc.). Subnet `10.99.10.0/24`, hub à `10.99.10.1`, écoute UDP `51821`, deux peers admin déclarés (laptop + phone). Le futur peer OPNsense maison est conservé en placeholder commenté pour la phase Proxmox. **Note** : le dashboard Pangolin n'est PAS joignable via ce tunnel (architecture reverse-proxy Host-aware — cf. §7.2), il continue de passer par SSH tunnel jusqu'à Phase 11 (Authentik + exposition publique).
 
-À la fin de la session : `wg show wg-admin` côté VPS liste les deux peers, le laptop monte le tunnel avec `wg-quick up homelab` et atteint `http://10.99.10.1:3000`, le phone fait pareil via QR code, `nmap` depuis l'extérieur n'expose **aucun port nouveau hors `51821/udp`** (et toujours `80/tcp`, `443/tcp`, `2203/tcp`).
+À la fin de la session : `wg show wg-admin` côté VPS liste les deux peers, le laptop monte le tunnel avec `wg-quick up homelab` et pingue `10.99.10.1`, le phone fait pareil via QR code, `nmap` depuis l'extérieur n'expose **aucun port nouveau hors `51821/udp`** (et toujours `80/tcp`, `443/tcp`, `2203/tcp`).
 
 ---
 
@@ -308,9 +308,11 @@ sudo wg show
 ping -c 3 10.99.10.1
 # Attendu : 3 réponses, ~latence Hetzner (10-30 ms).
 
-# Test fonctionnel — dashboard Pangolin interne (external_port = 3000, UI + auth)
-curl -sI http://10.99.10.1:3000
-# Attendu : HTTP/1.1 200 ou 30x — le tunnel route bien, Pangolin répond.
+# Test fonctionnel — le hub répond bien à l'IP côté tunnel
+ping -c 1 10.99.10.1 >/dev/null && echo "tunnel up"
+# Pas de dashboard à tester ici : aucun service interne ne binde sur
+# 10.99.10.1 pour l'instant (cf. §7.2 — Pangolin nécessite une approche
+# Host-aware, pas un binding direct).
 ```
 
 Pour activer le tunnel automatiquement au boot du laptop : `sudo systemctl enable wg-quick@homelab`. **Optionnel** — préférable de l'activer manuellement quand on en a besoin.
@@ -338,7 +340,7 @@ Sur le phone :
 3. Scanner le QR affiché dans le terminal du laptop.
 4. Nom du tunnel proposé : `homelab` (ou ce que tu veux).
 5. Activer le toggle du tunnel.
-6. Test : ouvrir Safari sur `http://10.99.10.1:3000` → dashboard Pangolin doit charger. Alternative pour pinger : app gratuite type **Network Ping Lite** → ping `10.99.10.1`.
+6. Test : app gratuite type **Network Ping Lite** → ping `10.99.10.1`. (Pas de dashboard Pangolin atteignable par binding direct sur l'IP du tunnel — cf. §7.2.)
 
 > **Sécurité** : effacer le QR de l'historique du terminal après import (`clear; history -c` si shell partagé). Le QR contient la **privkey** du phone.
 
@@ -359,23 +361,32 @@ Une fois le laptop connecté, la section `peer: <pubkey laptop>` doit afficher :
 
 Idem pour le phone après activation.
 
-### 7.2. Accès dashboard Pangolin via tunnel
+### 7.2. Accès dashboard Pangolin — pourquoi le tunnel WG ne suffit pas (SSH tunnel à la place)
 
-Depuis le laptop avec WG actif :
+**Le tunnel WG n'est PAS la bonne voie pour atteindre le dashboard Pangolin.** Pangolin est une application Host-aware : son middleware Express route en fonction du `Host` header pour servir login + UI complète. Un binding `IP:port:port` direct depuis le tunnel WG renvoie `404 Cannot GET /` sur la racine. Une tentative précédente d'exposer `10.99.10.1:3000:3000` côté compose pangolin a été retirée pour cette raison (cf. commit `revert(pangolin): drop wg-admin port binding`).
+
+**Approche actuelle — SSH tunnel** : on s'appuie sur l'exception `AllowTcpForwarding yes` posée pour le user `deploy` (cf. rôle `hardening`, runbook session-2 §4.3). Depuis le laptop :
 
 ```bash
-curl -sI http://10.99.10.1:3000
-# Attendu : code HTTP 200 ou 30x (l'IP 10.99.10.1 = adresse du hub vue de l'intérieur du tunnel).
+# Récupérer d'abord l'IP du container pangolin sur le réseau pangolin-net
+ssh -p 2203 deploy@<ip-vps> \
+  "sudo docker inspect pangolin -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}'"
+# Exemple : 172.19.0.2
+
+# Ouvrir un SSH tunnel local 3000 → container pangolin:3000
+ssh -p 2203 -L 3000:172.19.0.2:3000 -N -f deploy@<ip-vps>
+
+# Le dashboard est maintenant joignable
+xdg-open http://localhost:3000     # Linux
+# ou : open http://localhost:3000  # macOS
+
+# Pour fermer le tunnel
+pkill -f 'ssh -p 2203 -L 3000:172.19.0.2:3000'
 ```
 
-Important : le port `3000` n'est PAS exposé publiquement. Le compose Pangolin binde explicitement `10.99.10.1:3000:3000` (IP du hub WG, pas `0.0.0.0`) — vérifiable côté VPS avec `sudo ss -tlnp | grep 3000` qui doit afficher `10.99.10.1:3000` et **pas** `0.0.0.0:3000` ni `*:3000`. Le tunnel WG reste donc le **seul chemin** vers le dashboard, et ADR-002 est respectée (l'IP `10.99.10.1` n'existe que pour les peers connectés au hub).
+L'IP container peut changer si Docker recompose le bridge. Si le tunnel ne répond plus, ré-exécuter le `docker inspect` pour récupérer la nouvelle IP. Alternative plus robuste à terme : un alias DNS Docker côté host (resolver local) — non câblé pour l'instant.
 
-> **Note sur les ports Pangolin** (config upstream, `config.yml` section `server`) :
-> - `external_port: 3000` — **dashboard utilisateur** (Express + auth + UI). C'est CELUI qu'on binde sur le tunnel WG.
-> - `internal_port: 3001` — **API admin** (Traefik consomme `/api/v1/traefik-config`). Binder ce port-là sur le tunnel renvoie `404 Cannot GET /` sur la racine.
-> - `next_port: 3002` — serveur Next.js raw, sans la couche Express auth. Pas utile à exposer.
->
-> Si tu observes `Cannot GET /` quand tu tapes le dashboard depuis le tunnel, vérifie que `pangolin_port_dashboard` vaut bien `3000` dans `roles/pangolin/defaults/main.yml`.
+**Solution durable — Phase 11** : exposition publique de `pangolin.ldesfontaine.com` derrière Authentik (OIDC) + reverse proxy interne. Alors et seulement alors le dashboard sera atteignable via FQDN, sans tunnel SSH ni binding direct. Le tunnel WG de cette session reste utile pour les **autres** futurs services internes (monitoring, coffre, etc.) qui n'ont pas l'architecture Host-aware de Pangolin.
 
 ### 7.3. Bascule laptop ↔ phone
 
@@ -526,36 +537,6 @@ FAILED: file (/etc/wireguard/wg-admin.key) is absent, cannot continue
 Cause : la task précédente `Generate the WireGuard private key (only if absent)` utilise `creates:` — en check mode elle simule sans écrire le fichier, et toutes les tasks suivantes qui exigent la présence physique de `/etc/wireguard/wg-admin.key` plantent. Limitation Ansible connue (cf. §1.5 et ADR-000 "Limite acceptée — check mode partiel").
 
 Fix : au **premier** déploiement, ne pas lancer `--check`. Lancer directement le run réel de la section 2. À partir du 2ème run, la privkey existe sur disque et `--check` passe proprement.
-
-### 10.8. Dashboard Pangolin non joignable après reboot du VPS
-
-Symptôme : après un reboot, `curl http://10.99.10.1:3000` depuis le laptop connecté au tunnel ne répond plus (timeout ou « connection refused »). `wg show wg-admin` côté VPS montre bien l'interface up et le handshake établi.
-
-Cause probable : `docker.service` a démarré **avant** `wg-quick@wg-admin.service` au boot. Le container Pangolin essaie de binder `10.99.10.1:3000` mais l'IP n'existe pas encore côté kernel (l'interface `wg-admin` n'est pas montée), Docker échoue silencieusement sur le port et le container se loop en restart. Vérifier :
-
-```bash
-ssh -p 2203 deploy@<ip-vps>
-sudo docker ps --format 'table {{.Names}}\t{{.Status}}' | grep pangolin
-# Pangolin probablement en `Restarting (X) ...`
-
-sudo docker logs pangolin --tail 20
-# Typiquement : `cannot assign requested address` ou `bind: cannot assign requested address`
-
-ip -4 addr show wg-admin
-# Doit montrer inet 10.99.10.1/24. Si absent → wg-quick n'est pas up.
-```
-
-Fix immédiat (l'interface WG est maintenant montée, on demande à Docker de re-tenter le binding) :
-
-```bash
-# Option ciblée — recrée juste pangolin via compose (donc avec les vars du .env)
-sudo docker compose -f /opt/pangolin/docker-compose.yml restart pangolin
-
-# Option large — restart de tout Docker (tous les containers reload)
-sudo systemctl restart docker
-```
-
-Fix durable (optionnel) : ajouter une dépendance d'ordering systemd `docker.service` → `wg-quick@wg-admin.service` (`Requires=` + `After=`) via un drop-in `/etc/systemd/system/docker.service.d/wait-wg-admin.conf`. Non automatisé pour l'instant — à câbler dans une session ultérieure si le problème devient récurrent (à priori, un reboot manuel est rare).
 
 ---
 

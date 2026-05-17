@@ -20,20 +20,13 @@ services:
       # n'existe encore — sinon ignoré, ce qui rend la task idempotente).
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
-    ports:
-      # Dashboard Pangolin (Next.js + API admin) — binding INTENTIONNELLEMENT
-      # limité à l'IP du tunnel WG admin ({{ pangolin_dashboard_bind_ip }}),
-      # pas 0.0.0.0. Le dashboard n'est donc PAS exposé publiquement (ADR-002) :
-      # seuls les peers connectés au hub wg-admin peuvent l'atteindre.
-      #
-      # Contrainte d'ordre de boot : l'interface wg-admin doit être UP avant
-      # que ce container démarre, sinon Docker refuse le binding avec
-      # « cannot assign requested address » et le container plante en boucle.
-      # Si reboot du VPS et docker.service démarre avant wg-quick@wg-admin :
-      #   sudo systemctl restart docker
-      # ou plus ciblé :
-      #   sudo docker compose -f /opt/pangolin/docker-compose.yml restart pangolin
-      - "{{ pangolin_dashboard_bind_ip }}:{{ pangolin_port_dashboard }}:{{ pangolin_port_dashboard }}"
+    # Pas de `ports:` host : Pangolin est Host-aware (Express middleware
+    # qui route en fonction du Host header pour servir login + UI). Un
+    # binding "IP:port:port" depuis le tunnel WG renvoie 404 sur "/".
+    # L'accès admin actuel passe par SSH tunnel (cf. runbook session 6 §7.2).
+    # Cible Phase 11 : exposition publique de pangolin.{{ homelab_domain }}
+    # derrière Authentik (OIDC) + reverse proxy interne — alors et seulement
+    # alors le dashboard sera atteignable via FQDN sans tunnel.
     volumes:
       - ./config:/app/config
     healthcheck:
