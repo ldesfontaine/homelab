@@ -46,19 +46,14 @@ wg_admin_hub_endpoint_fqdn: "wg-hub.{{ homelab_domain }}"
 #   - la pubkey VPS affichée en sortie du run (voir tasks/main.yml task finale)
 #   - l'IP allouée ci-dessous + l'endpoint public
 #
-# Placeholder OPNsense maison (commenté ci-dessous) : à activer en phase
-# Proxmox/OPNsense (hors scope session 6). À ce moment-là :
-#   1. ajouter `vault_wg_peer_opnsense_pubkey` au vault VPS
-#   2. décommenter le bloc opnsense-home dans la liste
-#   3. rejouer le rôle — le hub reload sa conf, aucun autre service touché
-# Les CIDR couvrent le LAN MGMT (10.10.10.0/24), SVC_PRIV (10.10.60.0/24),
-# LAN domestique (10.10.70.0/24) et MGMT WG ADMIN (10.10.99.0/24) selon le
-# cahier des charges réseau.
-#
-#   - name: "opnsense-home"
-#     pubkey: "{{ vault_wg_peer_opnsense_pubkey }}"
-#     allowed_ips: "10.99.10.2/32, 10.10.10.0/24, 10.10.60.0/24, 10.10.70.0/24, 10.10.99.0/24"
+# Peer OPNsense maison (activé en Phase 9b — session 7) :
+# AllowedIPs couvre LAN MGMT (10.10.10.0/24), SVC_PRIV (10.10.60.0/24),
+# LAB (10.10.70.0/24) et BACKUP (10.10.99.0/24). Voir cahier des charges
+# section 9 (matrice firewall) et ADR-002.
 wg_admin_hub_peers:
+  - name: "opnsense-home"
+    pubkey: "{{ vault_wg_peer_opnsense_pubkey }}"
+    allowed_ips: "10.99.10.2/32, 10.10.10.0/24, 10.10.60.0/24, 10.10.70.0/24, 10.10.99.0/24"
   - name: "laptop-admin"
     pubkey: "{{ vault_wg_peer_laptop_pubkey }}"
     allowed_ips: "10.99.10.10/32"
