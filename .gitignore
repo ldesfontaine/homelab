@@ -57,3 +57,6 @@ id_dsa.*
 # --- Environment files (never commit) ---
 .env
 .env.*
+
+# Claude Code — settings locaux (non versionnés)
+.claude/settings.local.json
