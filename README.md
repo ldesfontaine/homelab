@@ -2,7 +2,8 @@
 
 Infrastructure as Code du homelab personnel `ldesfontaine.com`.
 
-Toute la conception, les choix d'architecture et les contraintes sont dans le **cahier des charges** : [`docs/cahier-des-charges-homelab.md`](docs/cahier-des-charges-homelab.md).
+Conception, architecture, doctrines, roadmap et inventaire des
+secrets : [`docs/00-project-overview.md`](docs/00-project-overview.md).
 
 ## Documentation
 
