@@ -236,6 +236,17 @@ ordre temporel strict — on peut paralléliser.
 7. **Phases d'enrichissement** : Vaultwarden, Filebrowser, Authentik
    OIDC sur Pangolin, Pi5 PBS, monitoring Prometheus / Grafana / Loki,
    UniFi, etc.
+8. **CI GitHub Actions** (différée — dette technique consciente) :
+   workflow qui exécuterait `pre-commit run --all-files` + scan
+   gitleaks complet sur push et pull request vers main. **Non mise
+   en place** dans la phase initiale : la défense actuelle repose
+   sur les hooks pre-commit locaux installés par `scripts/setup.sh`
+   après clone, plus la discipline humaine (pas de `--no-verify`).
+   Décision réversible. Déclencheurs naturels d'une mise en place
+   ultérieure : ouverture du repo à des contributions externes,
+   intégration d'une équipe, ou besoin de visibilité publique sur
+   la validation serveur indépendante de l'état des hooks locaux du
+   contributeur.
 
 ---
 
