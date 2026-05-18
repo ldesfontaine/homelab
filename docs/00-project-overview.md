@@ -312,6 +312,7 @@ Les Architecture Decision Records sont sous `docs/adr/`. Liste à jour :
 | ADR-001 | Stack technique initiale (Proxmox, OPNsense, Pangolin, etc.) | Accepté |
 | ADR-002 | Politique de firewalling (OPNsense + UFW VPS) | Accepté |
 | ADR-003 | Services *host-aware* vs *IP-friendly* (impact accès admin) | Accepté |
+| ADR-004 | Invocation d'ansible-lint via hook pre-commit local | Accepté |
 
 Tout nouveau choix structurant fait l'objet d'un ADR. Les ADRs ne sont
 jamais modifiés une fois acceptés : on en écrit un nouveau qui *supersede*
