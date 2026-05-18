@@ -31,9 +31,3 @@ peers:
     allowed_ips: "10.99.10.0/24, 10.10.10.0/24, 10.10.60.0/24, 10.10.70.0/24, 10.10.99.0/24"
     devices:
       - "iPhone Lucas (WireGuard iOS app)"
-
-  - name: tablet
-    tunnel_ip: "10.99.10.12/32"
-    allowed_ips: "10.99.10.0/24, 10.10.10.0/24, 10.10.60.0/24, 10.10.70.0/24, 10.10.99.0/24"
-    devices:
-      - "Tablette (à provisionner)"
