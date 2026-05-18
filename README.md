@@ -6,9 +6,11 @@ Toute la conception, les choix d'architecture et les contraintes sont dans le **
 
 ## Documentation
 
-- **Cahier des charges** : `docs/cahier-des-charges-homelab.md` — la vision et l'architecture cible
-- **Décisions techniques (ADR)** : `docs/adr/` — l'ADR-000 est le document fondateur du repo Ansible, à lire avant toute contribution
-- **Runbooks opérationnels** : `docs/runbooks/` — procédures de DR, mise à jour, rotation de secrets, etc.
+- **Source de vérité opérationnelle** : [`docs/00-project-overview.md`](docs/00-project-overview.md) — mission, architecture, doctrines, roadmap, inventaire des secrets.
+- **Décisions techniques (ADR)** : [`docs/adr/`](docs/adr/) — ADR-000 est le document fondateur du repo Ansible, à lire avant toute contribution.
+- **Runbooks opérationnels** : [`docs/runbooks/`](docs/runbooks/) — procédures de DR, mise à jour, rotation de secrets, etc.
+- **Inventaire des secrets** : [`docs/secrets-inventory.md`](docs/secrets-inventory.md) — doctrine, emplacements, procédure de récupération sur nouvelle machine.
+- **Référence historique** : [`docs/cahier-des-charges-homelab.md`](docs/cahier-des-charges-homelab.md) — cahier des charges initial (conception), conservé pour traçabilité.
 
 ## Stack
 
@@ -62,13 +64,7 @@ Commits : Conventional Commits, **aucun co-auteur IA**. Tous les commits au nom 
 
 ## État du projet
 
-- [x] Session 0 — bootstrap repo (structure, configs, vault)
-- [ ] Session 1 — rôles `common` + `bootstrap` + détection SSH
-- [ ] Session 2 — hardening + UFW + fail2ban
-- [ ] Session 3 — docker + portfolio
-- [ ] Session 4 — Pangolin
-- [ ] Session 5 — CrowdSec
-- [ ] Session 6 — WireGuard hub admin
+Voir la section « Roadmap » de [`docs/00-project-overview.md`](docs/00-project-overview.md#8-roadmap-haut-niveau-sans-dates) pour l'état d'avancement et la séquence des étapes restantes.
 
 ## Licence
 
