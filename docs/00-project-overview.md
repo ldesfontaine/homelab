@@ -298,7 +298,7 @@ Les Architecture Decision Records sont sous `docs/adr/`. Liste à jour :
 | ADR | Sujet | Statut |
 |---|---|---|
 | ADR-000 | Conventions de nommage et structure du repo | Accepté |
-| ADR-001 | Stratégie de gestion du vault Ansible | Accepté |
+| ADR-001 | Stack technique initiale (Proxmox, OPNsense, Pangolin, etc.) | Accepté |
 | ADR-002 | Politique de firewalling (OPNsense + UFW VPS) | Accepté |
 | ADR-003 | Services *host-aware* vs *IP-friendly* (impact accès admin) | Accepté |
 
@@ -329,12 +329,6 @@ l'ancien si la décision change.
 2. Parcourir `docs/deployment/` pour comprendre les procédures.
 3. Lire les ADRs sous `docs/adr/` pour les choix structurants.
 4. Consulter les runbooks sous `docs/runbooks/` pour des cas concrets.
-
-### Pour reprendre une session technique
-
-Voir `docs/prompts/session-start.md` pour le prompt d'initialisation
-d'une session d'assistance. La session commence par un aiguillage : on
-choisit la prochaine étape de la roadmap (section 8) à attaquer.
 
 ---
 
