@@ -23,39 +23,23 @@ secrets : [`docs/00-project-overview.md`](docs/00-project-overview.md).
 
 ## Setup local
 
-Prérequis : Python 3.11+, Git.
+Prérequis : Python 3.11+, Git, accès au gestionnaire de mots de
+passe (cf. [`docs/secrets-inventory.md`](docs/secrets-inventory.md)).
 
 ```bash
-# 1. Cloner le repo
-git clone <repo-url> homelab && cd homelab
-
-# 2. Créer un venv et installer les dépendances Python
-python3 -m venv .venv
-source .venv/bin/activate
-pip install --upgrade pip
-pip install -r ansible/requirements.txt
-
-# 3. Installer les collections Ansible
-cd ansible
-ansible-galaxy collection install -r requirements.yml
-
-# 4. Configurer le mot de passe vault
-mkdir -p ~/.ansible
-echo "<ton-vault-password>" > ~/.ansible/vault-pass-homelab.txt
-chmod 0600 ~/.ansible/vault-pass-homelab.txt
-
-# 5. Vérifier la chaîne
-ansible-inventory --list
-ansible-vault view inventory/group_vars/vps/vault.yml
-ansible-lint
+git clone git@github.com:ldesfontaine/homelab.git
+cd homelab
+./scripts/setup.sh
 ```
 
-## Hooks pre-commit (recommandé)
+Le script crée le venv Python, installe les dépendances et les
+collections Ansible, installe les hooks pre-commit, et lance une
+vérification de la chaîne complète. Il est idempotent — relançable
+sans risque.
 
-```bash
-pre-commit install
-pre-commit run --all-files
-```
+Pour configurer les secrets (vault password Ansible, clé age maître,
+clés SSH/WG), suivre la procédure « Récupération sur nouvelle machine »
+dans [`docs/secrets-inventory.md`](docs/secrets-inventory.md).
 
 ## Conventions
 
