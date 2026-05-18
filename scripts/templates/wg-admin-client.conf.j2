@@ -1,0 +1,19 @@
+# WireGuard ADMIN-RELAY — peer {{ peer.name }}
+# Généré par scripts/wg-admin-gen-profile.py
+# Source de vérité : scripts/wg-admin-profiles.yml
+# Devices cibles :
+{% for dev in peer.devices -%}
+#   - {{ dev }}
+{% endfor -%}
+#
+[Interface]
+Address = {{ peer.tunnel_ip }}
+PrivateKey = {{ private_key }}
+DNS = {{ hub.dns }}
+
+[Peer]
+# WG-ADMIN-RELAY hub (VPS Hetzner)
+PublicKey = {{ hub.public_key }}
+Endpoint = {{ hub.endpoint }}
+AllowedIPs = {{ peer.allowed_ips }}
+PersistentKeepalive = 25
