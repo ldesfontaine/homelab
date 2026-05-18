@@ -1,9 +1,9 @@
 # Cahier des charges — Homelab `ldesfontaine.com`
 
-> **Domaine** : `ldesfontaine.com`  
-> **FAI** : Orange (fibre 2,5 Gbps, IPv4 statique côté résidentiel)  
-> **Version du document** : 1.7  
-> **Statut** : conception validée — prêt pour exécution  
+> **Domaine** : `ldesfontaine.com`<br>
+> **FAI** : Orange (fibre 2,5 Gbps, IPv4 statique côté résidentiel)<br>
+> **Version du document** : 1.7<br>
+> **Statut** : conception validée — prêt pour exécution<br>
 > **Auteur** : ldesfontaine
 
 ---
@@ -2067,7 +2067,7 @@ role_attribute_path = contains(groups[*], 'admins') && 'Admin' || 'Viewer'
 
 ### 18.7 Backup
 
-Le LXC monitoring est sauvegardé via PBS quotidien comme tous les autres LXCs (rien à faire de spécial, couvert par la phase 12). 
+Le LXC monitoring est sauvegardé via PBS quotidien comme tous les autres LXCs (rien à faire de spécial, couvert par la phase 12).
 
 > **Note** : si le LXC est perdu, l'historique métriques/logs antérieur au dernier backup PBS est perdu également. Acceptable — c'est de l'observabilité, pas de la donnée business critique. Les configs (Prometheus, Grafana, Alertmanager, dashboards JSON) sont versionnées dans le repo Git Ansible et reproductibles à l'identique.
 
