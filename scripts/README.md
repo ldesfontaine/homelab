@@ -16,7 +16,7 @@ Voir la doc de chaque script :
 
 Les scripts versionnés ici doivent :
 - Ne consommer aucun secret depuis le repo (lire les secrets depuis
-  `~/homelab-keys/` ou `~/.ansible/` qui sont hors repo)
+  `~/homelab/keys/` ou `~/.ansible/` qui sont hors repo)
 - Être idempotents quand c'est pertinent
 - Avoir un `--help` ou docstring expliquant l'usage
 - Préférer Python (cohérent avec l'écosystème Ansible/Jinja2 du projet)

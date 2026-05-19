@@ -59,7 +59,7 @@ python3 scripts/wg-admin-gen-profile.py --list
 python3 scripts/wg-admin-gen-profile.py phone
 ```
 
-Output : `~/homelab-keys/wg-admin-relay/profiles/phone.conf` + `phone.png` (QR).
+Output : `~/homelab/keys/wg-admin-relay/profiles/phone.conf` + `phone.png` (QR).
 
 ### Générer pour tous les peers
 
@@ -71,11 +71,11 @@ python3 scripts/wg-admin-gen-profile.py --all
 
 1. Sur ton laptop : afficher le QR code généré
    ```bash
-   xdg-open ~/homelab-keys/wg-admin-relay/profiles/phone.png
+   xdg-open ~/homelab/keys/wg-admin-relay/profiles/phone.png
    ```
    Ou directement en console :
    ```bash
-   qrencode -t ANSIUTF8 -r ~/homelab-keys/wg-admin-relay/profiles/phone.conf
+   qrencode -t ANSIUTF8 -r ~/homelab/keys/wg-admin-relay/profiles/phone.conf
    ```
 2. Sur l'iPhone, ouvrir l'app **WireGuard officielle**
 3. **+** (en haut à droite) → **Créer à partir d'un QR code**
@@ -90,7 +90,7 @@ les doublons avec des AllowedIPs divergents.
 
 ```bash
 nmcli connection import type wireguard \
-  file ~/homelab-keys/wg-admin-relay/profiles/laptop.conf
+  file ~/homelab/keys/wg-admin-relay/profiles/laptop.conf
 
 # Renommer la connexion en "homelab" (convention projet)
 nmcli connection modify wireguard-laptop connection.id homelab
@@ -124,7 +124,7 @@ Valeurs à saisir manuellement dans `VPN → WireGuard` :
 | Activé               | ☑                                                     |
 | Nom                  | `WG_ADMIN`                                            |
 | Clé publique         | `gn2LoxjdUXtL0CVNFmNJ5nejGSZXdWhTWM5APr0eVVc=`        |
-| Clé privée           | Saisie depuis `~/homelab-keys/wg-admin-relay/opnsense.key` |
+| Clé privée           | Saisie depuis `~/homelab/keys/wg-admin-relay/opnsense.key` |
 | Port d'écoute        | (vide — OPNsense est client, pas serveur)             |
 | Adresse du tunnel    | `10.99.10.2/24`                                       |
 | Pairs                | `VPS-hub-pangolin`                                    |
@@ -146,9 +146,9 @@ Valeurs à saisir manuellement dans `VPN → WireGuard` :
 
 ## Sécurité
 
-- Les clés privées vivent UNIQUEMENT dans `~/homelab-keys/wg-admin-relay/`
+- Les clés privées vivent UNIQUEMENT dans `~/homelab/keys/wg-admin-relay/`
   (chmod 600) — jamais dans le repo
-- Archive offsite chiffrée : `~/homelab-keys/wg-admin-relay.tar.gz.age`
+- Archive offsite chiffrée : `~/homelab/keys/wg-admin-relay.tar.gz.age`
   (Google Drive). Clé age maître : `~/.age/homelab.key` (backup Dashlane)
 - Les profils générés (`.conf` et `.png`) sont aussi chmod 600 — contiennent
   la clé privée du peer

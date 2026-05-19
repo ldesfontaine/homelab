@@ -333,7 +333,7 @@ l'ancien si la décision change.
 | Vault password Ansible | `~/.ansible/vault-pass-homelab.txt` (chmod 600) | Gestionnaire de mots de passe |
 | Clé age maître | `~/.age/homelab.key` | Gestionnaire de mots de passe |
 | Clés SSH homelab | `~/.ssh/id_ed25519_homelab` | Gestionnaire de mots de passe |
-| Clés WireGuard peers | `~/homelab-keys/wg-admin-relay/*.key` (hors repo, chmod 600) | Archive `.tar.gz.age` sur stockage cloud chiffré |
+| Clés WireGuard peers | `~/homelab/keys/wg-admin-relay/*.key` (hors repo, chmod 600) | Archive `.tar.gz.age` sur stockage cloud chiffré |
 | Backups XML OPNsense | `backups/opnsense/*.xml.age` (dans le repo, chiffrés) | Repo Git (chiffrés) + stockage cloud |
 | Tokens API (Cloudflare, etc.) | `inventory/group_vars/<group>/vault.yml` (chiffré) | Dans le vault |
 

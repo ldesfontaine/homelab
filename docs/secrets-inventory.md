@@ -17,7 +17,7 @@
 **Hors repo** :
 
 - Clés privées WireGuard et SSH (privkeys d'identité) →
-  `~/homelab-keys/` (filesystem chiffré local).
+  `~/homelab/keys/` (filesystem chiffré local).
 - Passphrases (vault Ansible, clé age maître) → gestionnaire de mots
   de passe + backup cloud chiffré privé.
 
@@ -43,7 +43,7 @@ single point of failure passphrase.
 | Vault password Ansible | `~/.ansible/vault-pass-homelab.txt` (`0600`) | filesystem | gestionnaire mdp |
 | Clé age maître | `~/.age/homelab.key` (`0600`) | filesystem | gestionnaire mdp |
 | Clé SSH homelab | `~/.ssh/id_ed25519_homelab` (`0600`) | filesystem | gestionnaire mdp |
-| Clés WG peers admin | `~/homelab-keys/wg-admin-relay/*.key` (`0600`) | filesystem | archive `.tar.gz.age` sur cloud chiffré privé |
+| Clés WG peers admin | `~/homelab/keys/wg-admin-relay/*.key` (`0600`) | filesystem | archive `.tar.gz.age` sur cloud chiffré privé |
 | Backups OPNsense | `backups/opnsense/*.xml.age` (in-repo) | age | repo Git + cloud chiffré |
 | Tokens API (Cloudflare, etc.) | `ansible/inventory/group_vars/<group>/vault.yml` (in-repo) | ansible-vault AES256 | dans le vault |
 
@@ -58,15 +58,15 @@ compte gestionnaire de mots de passe accessible.
    - `~/.ansible/vault-pass-homelab.txt` (mot de passe vault Ansible).
    - `~/.age/homelab.key` (clé age maître).
    - `~/.ssh/id_ed25519_homelab` (clé SSH homelab).
-3. Récupérer l'archive `~/homelab-keys-backup.tar.gz.age` depuis le
+3. Récupérer l'archive `~/homelab/keys/wg-admin-relay.tar.gz.age` depuis le
    cloud chiffré privé. La déchiffrer et l'extraire :
 
    ```bash
-   age -d -i ~/.age/homelab.key homelab-keys-backup.tar.gz.age | \
+   age -d -i ~/.age/homelab.key wg-admin-relay.tar.gz.age | \
      tar xzf - -C ~/
    ```
 
-   Vérifier que `~/homelab-keys/wg-admin-relay/*.key` est en place
+   Vérifier que `~/homelab/keys/wg-admin-relay/*.key` est en place
    avec les bonnes permissions (`0600`).
 4. Cloner le repo :
 

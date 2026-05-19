@@ -3,7 +3,7 @@
 #
 # Ce fichier est consommé par scripts/wg-admin-gen-profile.py.
 # Les clés privées ne sont JAMAIS ici — elles sont lues à la volée depuis
-# ~/homelab-keys/wg-admin-relay/<peer>.key.
+# ~/homelab/keys/wg-admin-relay/<peer>.key.
 #
 # Pour la config OPNsense (instance WG-ADMIN-CLIENT côté maison), voir
 # docs/wg-admin-profiles.md (UI OPNsense, pas un .conf).

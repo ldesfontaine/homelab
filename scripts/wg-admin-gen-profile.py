@@ -3,9 +3,9 @@
 
 Source de vérité : scripts/wg-admin-profiles.yml
 Template         : scripts/templates/wg-admin-client.conf.j2
-Output           : ~/homelab-keys/wg-admin-relay/profiles/<peer>.{conf,png}
+Output           : ~/homelab/keys/wg-admin-relay/profiles/<peer>.{conf,png}
 
-Les clés privées sont lues à la volée depuis ~/homelab-keys/wg-admin-relay/<peer>.key
+Les clés privées sont lues à la volée depuis ~/homelab/keys/wg-admin-relay/<peer>.key
 et n'apparaissent jamais dans le repo.
 
 Voir docs/wg-admin-profiles.md pour la doctrine complète.
@@ -27,7 +27,7 @@ CONFIG_FILE = SCRIPTS_DIR / "wg-admin-profiles.yml"
 TEMPLATE_DIR = SCRIPTS_DIR / "templates"
 TEMPLATE_NAME = "wg-admin-client.conf.j2"
 
-KEYS_DIR = Path.home() / "homelab-keys" / "wg-admin-relay"
+KEYS_DIR = Path.home() / "homelab" / "keys" / "wg-admin-relay"
 PROFILES_DIR = KEYS_DIR / "profiles"
 
 

@@ -103,7 +103,7 @@ n'est plus disponible — ce qui n'est pas notre cas.
 
 ### Cloud chiffré privé — endroit pour l'archive `.tar.gz.age`
 
-L'archive `~/homelab-keys-backup.tar.gz.age` (~quelques Ko)
+L'archive `~/homelab/keys/wg-admin-relay.tar.gz.age` (~quelques Ko)
 contient les nouvelles privkeys peers chiffrées par age. Elle doit
 être stockée sur un endroit chiffré accessible depuis la machine
 de pilotage, et survivre à une perte locale du laptop.
@@ -137,12 +137,12 @@ Cette rotation modifie les éléments suivants :
 
 | Élément | Type | Localisation |
 |---|---|---|
-| Privkeys peers (laptop, phone, ...) | secret | `~/homelab-keys/wg-admin-relay/*.key` (hors repo) |
-| Pubkeys peers | public | `~/homelab-keys/wg-admin-relay/*.pub` (hors repo) + `ansible/inventory/group_vars/vps/vault.yml` (in-repo, chiffré) |
+| Privkeys peers (laptop, phone, ...) | secret | `~/homelab/keys/wg-admin-relay/*.key` (hors repo) |
+| Pubkeys peers | public | `~/homelab/keys/wg-admin-relay/*.pub` (hors repo) + `ansible/inventory/group_vars/vps/vault.yml` (in-repo, chiffré) |
 | Privkey hub | secret | `/etc/wireguard/wg-admin.key` (VPS uniquement) |
 | Pubkey hub | public | `/etc/wireguard/wg-admin.pub` (VPS) + `scripts/wg-admin-profiles.yml` (in-repo, clair) + `docs/wg-admin-profiles.md` (in-repo, clair, table OPNsense peer) |
-| Confs clients régénérées | secret | `~/homelab-keys/wg-admin-relay/profiles/*.conf` + `*.png` (hors repo) |
-| Archive backup | secret | `~/homelab-keys-backup.tar.gz.age` (local + cloud chiffré) |
+| Confs clients régénérées | secret | `~/homelab/keys/wg-admin-relay/profiles/*.conf` + `*.png` (hors repo) |
+| Archive backup | secret | `~/homelab/keys/wg-admin-relay.tar.gz.age` (local + cloud chiffré) |
 
 À l'issue de la rotation, 1 commit unique poussera le diff de :
 - `ansible/inventory/group_vars/vps/vault.yml` (diff opaque, vault
@@ -174,7 +174,7 @@ le vault.
 #### 2. Backup de l'état actuel
 
 ```bash
-BACKUP_DIR=~/wg-rotation-backup-$(date +%Y%m%d-%H%M)
+BACKUP_DIR=~/homelab/rotation-backups/$(date +%Y%m%d-%H%M)
 mkdir -p "$BACKUP_DIR"
 chmod 700 "$BACKUP_DIR"
 
@@ -198,7 +198,7 @@ ls -la "$BACKUP_DIR/"
 #### 3. Génération des nouvelles privkeys peers (côté laptop)
 
 ```bash
-cd ~/homelab-keys/wg-admin-relay
+cd ~/homelab/keys/wg-admin-relay
 umask 077
 
 # Pour chaque peer déclaré dans scripts/wg-admin-profiles.yml.
@@ -238,15 +238,15 @@ Remplacer les valeurs de chaque `vault_wg_peer_<name>_pubkey` par
 le contenu du `.pub` correspondant. Exemple pour deux peers :
 
 ```yaml
-vault_wg_peer_laptop_pubkey: "<contenu de ~/homelab-keys/wg-admin-relay/laptop.pub>"
-vault_wg_peer_phone_pubkey:  "<contenu de ~/homelab-keys/wg-admin-relay/phone.pub>"
+vault_wg_peer_laptop_pubkey: "<contenu de ~/homelab/keys/wg-admin-relay/laptop.pub>"
+vault_wg_peer_phone_pubkey:  "<contenu de ~/homelab/keys/wg-admin-relay/phone.pub>"
 ```
 
 Sauvegarder. Vérifier la cohérence :
 
 ```bash
-cat ~/homelab-keys/wg-admin-relay/laptop.pub
-cat ~/homelab-keys/wg-admin-relay/phone.pub
+cat ~/homelab/keys/wg-admin-relay/laptop.pub
+cat ~/homelab/keys/wg-admin-relay/phone.pub
 ansible -i ansible/inventory vps-pangolin \
   -m debug -a 'var=vault_wg_peer_laptop_pubkey'
 # La valeur affichée doit matcher le contenu du .pub
@@ -332,7 +332,7 @@ cd ~/homelab
 .venv/bin/python scripts/wg-admin-gen-profile.py --all
 ```
 
-Output attendu : `~/homelab-keys/wg-admin-relay/profiles/laptop.conf`,
+Output attendu : `~/homelab/keys/wg-admin-relay/profiles/laptop.conf`,
 `phone.conf`, et leurs `.png` (QR codes).
 
 Le script lit la pubkey hub depuis le yaml qu'on vient de mettre à
@@ -351,7 +351,7 @@ sudo nmcli connection delete homelab 2>/dev/null || true
 
 # Importer la nouvelle
 nmcli connection import type wireguard \
-  file ~/homelab-keys/wg-admin-relay/profiles/laptop.conf
+  file ~/homelab/keys/wg-admin-relay/profiles/laptop.conf
 
 # Renommer la connexion en "homelab" (convention projet)
 nmcli connection modify wireguard-laptop connection.id homelab
@@ -365,7 +365,7 @@ nmcli connection up homelab
 ```bash
 sudo wg-quick down homelab 2>/dev/null || true
 sudo install -m 0600 -o root -g root \
-  ~/homelab-keys/wg-admin-relay/profiles/laptop.conf \
+  ~/homelab/keys/wg-admin-relay/profiles/laptop.conf \
   /etc/wireguard/homelab.conf
 sudo wg-quick up homelab
 ```
@@ -389,11 +389,11 @@ Sur le phone, si disponible à l'instant T :
 1. App WireGuard iOS → supprimer l'ancien tunnel `homelab`.
 2. Afficher le QR de la nouvelle conf depuis le laptop :
 ```bash
-   qrencode -t ANSIUTF8 -r ~/homelab-keys/wg-admin-relay/profiles/phone.conf
+   qrencode -t ANSIUTF8 -r ~/homelab/keys/wg-admin-relay/profiles/phone.conf
 ```
    Ou ouvrir le PNG :
 ```bash
-   xdg-open ~/homelab-keys/wg-admin-relay/profiles/phone.png
+   xdg-open ~/homelab/keys/wg-admin-relay/profiles/phone.png
 ```
 3. App WireGuard → `+` → « Créer à partir d'un QR code » → scanner.
 4. Activer le tunnel.
@@ -415,7 +415,7 @@ Pas d'impact opérationnel tant que l'admin laptop fonctionne.
 AGE_RECIPIENT=$(age-keygen -y ~/.age/homelab.key)
 echo "Recipient age : $AGE_RECIPIENT"
 
-cd ~/homelab-keys
+cd ~/homelab/keys
 
 # Cleanup des .old (les vieilles clés ont fini leur job, on les
 # garde encore quelques étapes pour le rollback, on les supprime
@@ -423,21 +423,21 @@ cd ~/homelab-keys
 
 # Création de l'archive chiffrée
 tar czf - wg-admin-relay/ | \
-  age -r "$AGE_RECIPIENT" > ~/homelab-keys-backup.tar.gz.age
-ls -la ~/homelab-keys-backup.tar.gz.age
+  age -r "$AGE_RECIPIENT" > ~/homelab/keys/wg-admin-relay.tar.gz.age
+ls -la ~/homelab/keys/wg-admin-relay.tar.gz.age
 ```
 
 #### 14. Upload sur cloud chiffré privé + test récupération
 
 Selon la méthode actuelle (Google Drive d'après doctrine
 existante) ou l'alternative choisie : déposer
-`~/homelab-keys-backup.tar.gz.age` à l'endroit prévu.
+`~/homelab/keys/wg-admin-relay.tar.gz.age` à l'endroit prévu.
 
 Tester la récupération AVANT de fermer la session :
 
 ```bash
 # Simuler une récup
-cp ~/homelab-keys-backup.tar.gz.age /tmp/test-recovery.tar.gz.age
+cp ~/homelab/keys/wg-admin-relay.tar.gz.age /tmp/test-recovery.tar.gz.age
 
 # Vérifier qu'on peut bien déchiffrer
 age -d -i ~/.age/homelab.key /tmp/test-recovery.tar.gz.age | tar tzf -
@@ -480,14 +480,14 @@ git commit -m "feat(wg): full rotate WG admin keys (hub + all peers)
 
 Rotation complète des clés WireGuard du tunnel admin :
 - Nouvelles privkeys peers générées côté laptop, stockées en
-  ~/homelab-keys/wg-admin-relay/.
+  ~/homelab/keys/wg-admin-relay/.
 - Pubkeys peers correspondantes mises à jour dans le vault VPS.
 - Privkey hub régénérée côté VPS (suppression forcée puis run du
   rôle wg_admin_hub).
 - Pubkey hub mise à jour dans scripts/wg-admin-profiles.yml et
   dans docs/wg-admin-profiles.md (table OPNsense peer).
 - Confs clients régénérées via scripts/wg-admin-gen-profile.py.
-- Archive ~/homelab-keys-backup.tar.gz.age mise à jour sur cloud
+- Archive ~/homelab/keys/wg-admin-relay.tar.gz.age mise à jour sur cloud
   chiffré privé.
 
 Tunnels laptop et phone validés (handshake récent côté VPS, ping
@@ -504,7 +504,7 @@ full des clés WireGuard admin\"."
 shred -u "$BACKUP_DIR/vault-decrypted-backup.yml"
 
 # Suppression des anciennes clés peers .old côté laptop
-rm -f ~/homelab-keys/wg-admin-relay/*.old
+rm -f ~/homelab/keys/wg-admin-relay/*.old
 
 # Suppression du fichier pub.old côté VPS
 ssh -p 2203 deploy@<ip-vps> 'sudo rm /etc/wireguard/wg-admin.pub.old'
