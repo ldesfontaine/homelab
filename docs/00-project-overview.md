@@ -127,18 +127,17 @@ modification structurelle s'accompagne d'une mise à jour de la doc dans
 le même commit. Les procédures opérationnelles sont des fichiers
 markdown actionnables, pas des descriptions narratives.
 
-Trois niveaux de documentation cohabitent :
+Quatre niveaux de documentation cohabitent :
 
 - **Architecture** (`docs/00-project-overview.md` — ce fichier) : la
   vision haute et les doctrines.
-- **Déploiement** (`docs/deployment/*.md`) : procédures pas-à-pas pour
-  installer une couche from scratch.
-- **Opérations** (`docs/operations/*.md`) : rotations, backups, DR,
-  diagnostics.
+- **Runbooks de déploiement** (`docs/runbooks/session-*.md`) :
+  procédures pas-à-pas par session de mise en place, qui constituent
+  la doctrine de déploiement canonique.
+- **Opérations** (`docs/operations/*.md`) : procédures récurrentes
+  (rotations, backups, DR, diagnostics).
 - **ADR** (`docs/adr/ADR-*.md`) : décisions structurantes avec leur
   justification.
-- **Runbooks** (`docs/runbooks/session-*.md`) : journaux d'exécution des
-  sessions, pour la traçabilité historique.
 
 ---
 
@@ -222,17 +221,24 @@ ordre temporel strict — on peut paralléliser.
 1. **Hygiène sécu du repo public** : audit du contenu existant, mise en
    place de `pre-commit` + `gitleaks`, chiffrement age des backups
    OPNsense déjà présents.
-2. **Réorganisation du repo** : structure cible, migration des docs,
-   README vitrine.
-3. **Doctrine de déploiement** : `docs/deployment/{00-prerequisites,
-   01-vps, 02-opnsense, 03-proxmox, 04-clients-admin}.md`.
+2. **Réorganisation du repo** *(close)* : structure cible posée,
+   ADRs en place, runbooks, secrets-inventory, schémas et
+   project-overview en source de vérité, README vitrine.
+3. **Doctrine de déploiement** : portée par
+   `docs/runbooks/session-*.md`. Sessions 1-6 couvrent le VPS complet
+   (bootstrap, hardening, Docker + portfolio, Pangolin + DNS,
+   CrowdSec, WG admin hub). Les sessions à venir documenteront
+   OPNsense, Proxmox, etc. au fur et à mesure de leur déploiement.
 4. **Rotation et consolidation des secrets** : clés WireGuard peers
    regénérées via procédure formelle, archivage des dossiers de clés
    éparpillés.
 5. **Procédures opérationnelles** : `docs/operations/{key-rotation,
-   backup-restore, disaster-recovery}.md`.
+   backup-restore, disaster-recovery}.md` — procédures récurrentes
+   distinctes des sessions de déploiement.
 6. **Validation par test fresh-install** : déploiement complet from
-   scratch en suivant la doc, sur matériel jetable ou réutilisé.
+   scratch en suivant les runbooks `docs/runbooks/`, sur matériel
+   jetable ou réutilisé. L'occasion de faire évoluer les runbooks si
+   certaines étapes se révèlent obsolètes ou incomplètes.
 7. **Phases d'enrichissement** : Vaultwarden, Filebrowser, Authentik
    OIDC sur Pangolin, Pi5 PBS, monitoring Prometheus / Grafana / Loki,
    UniFi, etc.
@@ -338,9 +344,9 @@ l'ancien si la décision change.
 ### Pour un lecteur humain qui découvre le projet
 
 1. Lire la section 2 (architecture) pour la vue d'ensemble.
-2. Parcourir `docs/deployment/` pour comprendre les procédures.
+2. Parcourir `docs/runbooks/` pour comprendre les procédures de
+   déploiement.
 3. Lire les ADRs sous `docs/adr/` pour les choix structurants.
-4. Consulter les runbooks sous `docs/runbooks/` pour des cas concrets.
 
 ---
 
