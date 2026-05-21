@@ -136,7 +136,7 @@ Valeurs à saisir manuellement dans `VPN → WireGuard` :
 |------------------------|-------------------------------------------------------|
 | Activé                 | ☑                                                     |
 | Nom                    | `VPS-hub-pangolin`                                    |
-| Clé publique           | `87VrPX34/AJ22jYmRL9WdrQXZBhEKEgaMO/qfELmyiM=`        |
+| Clé publique           | `5fOgdc2+L+Cen+1nEhMpPkKcNBkm6aih+Fp5v+YZ1Bg=`        |
 | Clé pré-partagée       | (vide — non utilisée tant que Phase 9c)              |
 | IPs autorisées         | `10.99.10.0/24`                                       |
 | Adresse du point final | `wg-hub.ldesfontaine.com`                             |

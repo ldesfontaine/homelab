@@ -10,7 +10,7 @@
 
 hub:
   endpoint: "wg-hub.ldesfontaine.com:51821"
-  public_key: "87VrPX34/AJ22jYmRL9WdrQXZBhEKEgaMO/qfELmyiM="
+  public_key: "5fOgdc2+L+Cen+1nEhMpPkKcNBkm6aih+Fp5v+YZ1Bg="
   dns: "10.10.10.1"   # Unbound interne via le tunnel
 
 # AllowedIPs canonique — voir docs/wg-admin-profiles.md pour la doctrine.

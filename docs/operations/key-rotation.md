@@ -182,10 +182,11 @@ chmod 700 "$BACKUP_DIR"
 cp ~/.config/wireguard/homelab/*.{key,pub,conf} "$BACKUP_DIR/" 2>/dev/null || true
 
 # Backup du vault avant modification — déchiffré, à supprimer après
-# validation rotation OK
-ansible-vault decrypt --output="$BACKUP_DIR/vault-decrypted-backup.yml" \
-  ansible/inventory/group_vars/vps/vault.yml \
-  --vault-password-file ~/.ansible/vault-pass-homelab.txt
+# validation rotation OK. Méthode `view` (non destructive) plutôt que
+# `decrypt` (qui modifie le fichier source si --output est mal géré).
+ansible-vault view ansible/inventory/group_vars/vps/vault.yml \
+  --vault-password-file ~/.ansible/vault-pass-homelab.txt \
+  > "$BACKUP_DIR/vault-decrypted-backup.yml"
 chmod 600 "$BACKUP_DIR/vault-decrypted-backup.yml"
 
 ls -la "$BACKUP_DIR/"
@@ -201,11 +202,13 @@ ls -la "$BACKUP_DIR/"
 cd ~/homelab/keys/wg-admin-relay
 umask 077
 
-# Pour chaque peer déclaré dans scripts/wg-admin-profiles.yml.
-# Lister les peers via le script et itérer dessus.
-# Exemple si peers = [laptop, phone] :
+# Pour chaque peer actif. La liste doit être dérivée de l'inventaire
+# réel (sortie de `wg show wg-admin` côté VPS croisée avec les
+# `vault_wg_peer_*` du vault), PAS codée en dur ici — elle évoluera
+# avec le homelab.
+# Exemple à date (laptop, phone, opnsense) :
 
-for peer in laptop phone; do
+for peer in laptop phone opnsense; do
   # Sauvegarder l'ancien (rollback)
   mv "${peer}-priv.key" "${peer}-priv.key.old" 2>/dev/null || true
   mv "${peer}.key" "${peer}.key.old" 2>/dev/null || true
@@ -272,10 +275,16 @@ exit
 #### 6. Re-déploiement du rôle wg_admin_hub
 
 ```bash
-cd ~/homelab/ansible
-.venv/bin/ansible-playbook playbooks/deploy-vps-services.yml \
+cd <racine-repo>/ansible
+../.venv/bin/ansible-playbook playbooks/deploy-vps-services.yml \
   --tags wg_admin_hub --diff
 ```
+
+> **Note** : le venv vit à la racine du repo (`.venv/`), mais la
+> commande se lance depuis le sous-dossier `ansible/`. D'où le
+> `../.venv/bin/ansible-playbook` (et non `.venv/bin/...`). Adapter
+> `<racine-repo>` au chemin local — la doctrine ne hardcode pas ce
+> chemin, il dépend de l'installation.
 
 Attendu :
 - `changed > 0` sur les tasks « Generate the WireGuard private
@@ -370,6 +379,29 @@ sudo install -m 0600 -o root -g root \
 sudo wg-quick up homelab
 ```
 
+> **⚠️ Piège connu — ne pas tester le tunnel admin depuis le LAN
+> maison.** Le tunnel admin a `AllowedIPs` couvrant `10.10.10.0/24`
+> et les autres VLANs internes. Activé depuis le LAN maison, il
+> capture le trafic vers ces subnets et le route vers le VPS au
+> lieu du LAN direct — conflit de routes.
+>
+> Conséquence si le tunnel OPNsense est down : le DNS interne
+> (`10.10.10.1`, Unbound) devient injoignable car routé via un
+> chemin cassé. Symptôme : plus de résolution DNS, navigateur qui
+> ne charge plus rien.
+>
+> La rotation des clés se valide par `ping 10.99.10.1` (hub) — c'est
+> suffisant. La validation fonctionnelle complète du tunnel se fait
+> depuis un réseau **externe** (4G), et seulement quand OPNsense
+> relaie correctement.
+>
+> Workaround si besoin d'activer le tunnel pendant qu'OPNsense est
+> down (DNS coupé) :
+> ```bash
+> nmcli connection modify homelab ipv4.dns ""
+> nmcli connection modify homelab ipv4.ignore-auto-dns yes
+> ```
+
 **Test** :
 
 ```bash
@@ -408,6 +440,21 @@ restent sur le laptop, reconfigurer dès que possible. Le hub a
 déjà la nouvelle pubkey, le phone restera offline en attendant.
 Pas d'impact opérationnel tant que l'admin laptop fonctionne.
 
+#### 12b. Reconfiguration OPNsense (différable)
+
+Une fois la clé du peer `opnsense` rotée côté hub et vault, le
+tunnel OPNsense reste **down** tant que l'instance WG_ADMIN n'est
+pas reconfigurée côté UI OPNsense :
+
+- nouvelle privkey peer (depuis `~/homelab/keys/wg-admin-relay/opnsense.key`),
+- nouvelle pubkey hub (depuis `scripts/wg-admin-profiles.yml`).
+
+État acceptable si OPNsense n'a pas besoin du tunnel admin dans
+l'immédiat (le hub a déjà la nouvelle pubkey peer, OPNsense
+reconnectera dès reconfig). À terme, cette reconfig sera
+automatisée via le futur déploiement-as-code OPNsense (cf.
+ADR-001) — la reconfig manuelle UI n'est qu'une étape transitoire.
+
 #### 13. Création de l'archive `.tar.gz.age`
 
 ```bash
@@ -416,13 +463,30 @@ AGE_RECIPIENT=$(age-keygen -y ~/.age/homelab.key)
 echo "Recipient age : $AGE_RECIPIENT"
 
 cd ~/homelab/keys
+```
 
-# Cleanup des .old (les vieilles clés ont fini leur job, on les
-# garde encore quelques étapes pour le rollback, on les supprime
-# au § Nettoyage final).
+> **⚠️ Purge obligatoire avant archivage** — l'archive ne doit
+> contenir QUE des secrets actuellement en service. Avant le `tar`,
+> purger `~/homelab/keys/wg-admin-relay/` de tout secret mort :
+>
+> - `shred -u` les anciennes clés `*.key.old` (et les supprimer),
+> - supprimer tout dossier `archive/` contenant d'anciennes
+>   privkeys — anti-pattern : **une clé rotée se détruit, ne
+>   s'archive pas**,
+> - supprimer les profils (`*.conf`, `*.png`) de peers retirés.
+>
+> Garder des privkeys mortes dans le backup augmente la surface
+> d'exposition sans aucun bénéfice (cf. `docs/secrets-inventory.md`
+> sur le risque rétrospectif).
+>
+> Les `*.old` issus de l'étape 3 sont conservés *côté `~/homelab/keys/wg-admin-relay/`*
+> jusqu'au § Nettoyage final (rollback possible), mais **ne doivent
+> pas entrer dans l'archive**. Soit on les sort du dossier avant le
+> `tar`, soit on les exclut explicitement (`tar --exclude='*.old'`).
 
-# Création de l'archive chiffrée
-tar czf - wg-admin-relay/ | \
+```bash
+# Création de l'archive chiffrée (avec exclusion des .old)
+tar --exclude='*.old' -czf - wg-admin-relay/ | \
   age -r "$AGE_RECIPIENT" > ~/homelab/keys/wg-admin-relay.tar.gz.age
 ls -la ~/homelab/keys/wg-admin-relay.tar.gz.age
 ```
@@ -570,4 +634,4 @@ runbook session-1 § « Rollback manuel via console Hetzner ».
 
 | Date | Opérateur | Peers rotés | Pubkey hub avant → après | Notes |
 |---|---|---|---|---|
-|  |  |  |  |  |
+| 2026-05-21 | ldesfontaine | laptop, phone, opnsense | 87VrPX34… → 5fOgdc2… | Première rotation full documentée. Peer opnsense roté côté hub + vault, reconfig UI OPNsense différée (déploiement-as-code à venir). Tunnel laptop validé par handshake ; phone profil régénéré ; archive wg-admin-relay.tar.gz.age régénérée et purgée des secrets morts. |
