@@ -1,20 +1,10 @@
 # Configuration gitleaks pour le repo homelab.
 # Référence : https://github.com/gitleaks/gitleaks
 #
-# Stratégie : on hérite des règles built-in (useDefault = true) et on
-# whitelist uniquement le bruit confirmé par audit. Pas d'exclusion
-# préventive de vaults ou backups chiffrés : si un faux positif
-# apparaît, on l'ajoutera ici avec une justification explicite.
+# Stratégie : hériter des règles intégrées sans exclusion préventive.
+# Un éventuel faux positif sera traité uniquement après vérification.
 
 title = "gitleaks config — ldesfontaine/homelab"
 
 [extend]
 useDefault = true
-
-[allowlist]
-description = "Bruit légitime du repo (collections Ansible vendored)"
-paths = [
-    # Test fixtures upstream embarquant des clés/secrets de démo.
-    # Confirmé sans secret réel par l'audit pré-republication.
-    '''ansible/\.collections/.*''',
-]

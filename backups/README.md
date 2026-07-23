@@ -1,15 +1,25 @@
-# backups/
+# Sauvegardes de configuration
 
-Backups chiffrés du homelab. Convention :
+Les exports OPNsense et Netgear peuvent contenir des informations sensibles :
+comptes, empreintes, topologie, adresses ou clés. Ils ne sont jamais versionnés
+en clair.
 
-- OPNsense XML : `opnsense/*.xml.age` (chiffrement age, clé maître
-  `~/.age/homelab.key`).
-- Autres types à venir (Proxmox, Vaultwarden, etc.) : un sous-dossier
-  par service, fichiers chiffrés age.
+## Convention
 
-Les fichiers en clair ne sont jamais commités. La chaîne pre-commit
-(gitleaks + detect-private-key) en est garante.
+```text
+backups/
+├── opnsense/
+│   └── config-AAAA-MM-JJ.xml.age
+└── switch/
+    └── config-AAAA-MM-JJ.cfg.age
+```
 
-Voir [`docs/secrets-inventory.md`](../docs/secrets-inventory.md) pour
-la doctrine secrets et la procédure de récupération sur nouvelle
-machine.
+- chiffrement externe avec `age` avant toute copie dans le dépôt ;
+- clé privée de déchiffrement conservée hors du dépôt ;
+- aucune adresse MAC, clé privée ou phrase secrète dans les noms de fichiers ;
+- une seconde copie chiffrée doit exister hors Git ;
+- une sauvegarde n’est considérée comme utile qu’après un test de restauration.
+
+Les commandes exactes de sauvegarde et de restauration seront écrites au
+moment de la première exportation réelle. Aucun exemple ne doit inclure un
+secret utilisable.

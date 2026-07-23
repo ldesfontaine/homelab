@@ -1,9 +1,0 @@
----
-# ===========================================================================
-# Constantes internes au rôle `fail2ban`
-# ===========================================================================
-# Préfixées par `_` selon la convention ADR-000 Décision 2.
-# ===========================================================================
-
-_fail2ban_package: fail2ban
-_fail2ban_jail_local_path: /etc/fail2ban/jail.local

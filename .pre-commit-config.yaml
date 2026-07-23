@@ -24,17 +24,3 @@ repos:
     hooks:
       - id: yamllint
         args: ['-c=.yamllint']
-
-  # ansible-lint via hook local : invoque depuis ansible/ pour que
-  # ansible.cfg soit chargé (roles_path = ./roles résolu). Le hook
-  # upstream ansible/ansible-lint exec depuis le cwd Git racine, ce
-  # qui rate notre topologie (cf. ADR à venir si on formalise).
-  # Pré-requis : venv setup via ansible/requirements.txt.
-  - repo: local
-    hooks:
-      - id: ansible-lint
-        name: ansible-lint (from ansible/)
-        language: system
-        entry: bash -c 'cd ansible && exec ../.venv/bin/ansible-lint "$@"' --
-        files: ^ansible/
-        pass_filenames: false
