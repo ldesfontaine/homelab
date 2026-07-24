@@ -1,6 +1,6 @@
 # État du projet
 
-Dernière mise à jour : 23 juillet 2026.
+Dernière mise à jour : 24 juillet 2026.
 
 ## Lecture des états
 
@@ -51,8 +51,13 @@ pas présentés comme configurés avant leur mise en place réelle.
 
 ## Prochain point de contrôle
 
-1. vérifier si OPNsense est déjà installé sur le CWWK ;
-2. identifier la correspondance entre les six prises physiques et les
-   interfaces vues par OPNsense ;
-3. étiqueter les câbles et les ports ;
-4. conserver un accès Internet Livebox indépendant pendant les essais.
+La conception du socle est écrite, mais aucune configuration réelle ne la
+prouve encore. La prochaine action est l’exécution accompagnée des runbooks :
+
+1. télécharger et vérifier l’image OPNsense ;
+2. installer OPNsense sur le CWWK ;
+3. identifier les six prises, puis établir `WAN` et `RESCUE` ;
+4. revenir au dépôt avant de configurer le trunk et le switch.
+
+Le Wi-Fi Livebox doit rester disponible pendant toute cette première
+installation.

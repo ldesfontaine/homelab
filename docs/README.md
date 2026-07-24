@@ -5,6 +5,8 @@
 - [`ETAT-DU-PROJET.md`](ETAT-DU-PROJET.md) : état réel et prochaine étape.
 - [`CHOIX-STRUCTURANTS.md`](CHOIX-STRUCTURANTS.md) : décisions retenues et
   raisons courtes.
+- [`REFERENCES.md`](REFERENCES.md) : sources éditeur utilisées pour préparer
+  les procédures.
 
 ## Architecture
 
@@ -12,6 +14,7 @@
 - [`architecture/cablage.md`](architecture/cablage.md)
 - [`architecture/zones-et-vlans.md`](architecture/zones-et-vlans.md)
 - [`architecture/politique-firewall.md`](architecture/politique-firewall.md)
+- [`architecture/services-reseau.md`](architecture/services-reseau.md)
 
 ## Inventaire
 
@@ -24,8 +27,9 @@ partie couvre actuellement :
 
 - [`runbooks/01-preparer-et-identifier.md`](runbooks/01-preparer-et-identifier.md)
 - [`runbooks/02-installer-opnsense.md`](runbooks/02-installer-opnsense.md)
-- [`runbooks/03-configurer-switch-et-vlans.md`](runbooks/03-configurer-switch-et-vlans.md)
-- [`runbooks/04-valider-le-socle-reseau.md`](runbooks/04-valider-le-socle-reseau.md)
+- [`runbooks/03-configurer-le-socle-opnsense.md`](runbooks/03-configurer-le-socle-opnsense.md)
+- [`runbooks/04-configurer-switch-et-vlans.md`](runbooks/04-configurer-switch-et-vlans.md)
+- [`runbooks/05-valider-le-socle-reseau.md`](runbooks/05-valider-le-socle-reseau.md)
 
 Chaque runbook contient ses propres contrôles et son retour arrière. Un dossier
 de preuves séparé n’est pas nécessaire tant que les validations restent

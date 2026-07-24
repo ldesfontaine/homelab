@@ -117,3 +117,63 @@ Your Cloud est absent ou indisponible.
 
 **Conséquence :** OPNsense reste la source de vérité réseau. Toute capacité de
 modification future devra être bornée, explicite, validée et réversible.
+
+## C-009 — Un DNS local, chiffré vers Quad9
+
+**Statut : retenu — 24 juillet 2026**
+
+Les postes utilisent uniquement Unbound sur OPNsense. Unbound transmet les
+requêtes en DNS over TLS vers Quad9 Secure.
+
+**Pourquoi :** on obtient un cache local, un transport chiffré et un premier
+filtrage des domaines malveillants sans dépendre d’une VM ou d’un service du
+Homelab.
+
+**Conséquence :** les DNS directs en ports 53 et 853 sont bloqués pour les
+clients. Il n’y a pas de fallback invisible ; la récupération se fait
+manuellement par `RESCUE`. Le DNS over HTTPS sur 443 reste une limite connue.
+
+## C-010 — IPv4 seulement pour la première partie
+
+**Statut : retenu — 24 juillet 2026**
+
+Le WAN OPNsense et les réseaux internes sont d’abord configurés en IPv4.
+
+**Pourquoi :** recevoir un préfixe IPv6 derrière la Livebox et reproduire toute
+la politique de filtrage ajouterait une seconde architecture à valider avant
+même d’avoir prouvé le socle.
+
+**Conséquence :** IPv6 est explicitement désactivé et bloqué dans OPNsense
+pendant la partie 1. Son ajout futur sera une décision et une validation
+complètes, pas une case activée implicitement.
+
+## C-011 — La gestion du MS305E assume sa limite
+
+**Statut : retenu — 24 juillet 2026**
+
+Le manuel du MS305E ne documente pas de VLAN de management dédié. Son interface
+reçoit une IP fixe dans `USERS` et n’est accessible que depuis l’adresse
+réservée du poste d’administration.
+
+**Pourquoi :** inventer une fonction absente créerait un faux sentiment
+d’isolation. Le switch doit être utilisé sans achat supplémentaire.
+
+**Conséquence :** sa gestion est moins isolée que celle d’un switch pleinement
+manageable. L’accès est réduit par sa liste d’autorisation IP, son mot de passe
+et le fait qu’il n’est jamais publié. Cette liste IP n’empêche pas un poste
+déjà présent dans `USERS` d’usurper l’adresse autorisée ; cela reste accepté car
+`USERS` ne contient que des machines de confiance. Le reset physique et l’accès
+direct restent le retour arrière.
+
+## C-012 — Commencer sans surcouche de sécurité
+
+**Statut : retenu — 24 juillet 2026**
+
+Suricata, Zenarmor, CrowdSec, les listes DNS publicitaires, UPnP, mDNS, VPN et
+les plugins tiers restent désactivés lors de l’installation initiale.
+
+**Pourquoi :** routage, VLAN, DNS, DHCP et règles doivent être observables et
+diagnostiquables seuls.
+
+**Conséquence :** une fonction sera ajoutée après la validation du socle, avec
+un besoin précis, une mesure de coût et un retour arrière.

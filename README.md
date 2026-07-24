@@ -39,6 +39,11 @@ Le dépôt est le dossier technique public du Homelab :
 Le point d’entrée opérationnel est
 [`docs/ETAT-DU-PROJET.md`](docs/ETAT-DU-PROJET.md).
 
+La procédure de la première partie est préparée jusqu’aux valeurs OPNsense,
+aux règles DNS/firewall, aux VLAN du MS305E, aux tests négatifs et aux retours
+arrière. Elle reste marquée **planifiée** tant qu’elle n’a pas été exécutée sur
+le matériel.
+
 ## Histoire du projet
 
 Le dépôt [zero-trust](https://github.com/ldesfontaine/zero-trust) conserve une

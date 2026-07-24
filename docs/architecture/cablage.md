@@ -21,14 +21,15 @@ dans le plan ne signifie pas qu’ils sont configurés.
 
 | Port | Équipement | Configuration cible |
 |---:|---|---|
-| P1 | OPNsense `TRUNK-SWITCH` | VLAN 10, 20, 30 et 40 taggés |
+| P1 | OPNsense `TRUNK-SWITCH` | VLAN 20 et 40 taggés ; VLAN 4094 natif inutilisé |
 | P2 | PC de confiance 1 | VLAN 20 non taggé, PVID 20 |
 | P3 | PC de confiance 2 | VLAN 20 non taggé, PVID 20 |
 | P4 | PC d’expérimentation | VLAN 40 non taggé, PVID 40 |
-| P5 | Future borne Wi-Fi | VLAN 10 non taggé ; VLAN 20 et 30 taggés |
+| P5 | Future borne Wi-Fi | libre et désactivé pendant la partie 1 |
 
-Pendant la partie 1, P5 reste libre. La configuration exacte de la borne ne
-fait pas partie du runbook.
+Le VLAN 4094 est une impasse : OPNsense ne lui attribue aucune interface. Il
+absorbe le trafic non taggé accidentel du trunk. Les VLAN 10 et 30 seront
+ajoutés à P1 et P5 uniquement lors de l’installation future de la borne.
 
 ## Règles de câblage
 
